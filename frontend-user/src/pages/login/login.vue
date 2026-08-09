@@ -110,6 +110,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { sendSms, loginByMobile } from '@/api/auth'
 
 const activeTab = ref<'login' | 'register'>('login')
 const codeCountdown = ref(0)
@@ -127,32 +128,47 @@ const registerForm = reactive({
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
-function sendCode() {
+async function sendCode() {
   const phone = activeTab.value === 'login' ? loginForm.phone : registerForm.phone
   if (!phone || phone.length !== 11) {
     uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
     return
   }
-  // TODO: 调用后端发送验证码接口
-  uni.showToast({ title: '验证码已发送', icon: 'success' })
-  codeCountdown.value = 60
-  countdownTimer = setInterval(() => {
-    codeCountdown.value--
-    if (codeCountdown.value <= 0 && countdownTimer) {
-      clearInterval(countdownTimer)
-      countdownTimer = null
-    }
-  }, 1000)
+  try {
+    await sendSms(phone)
+    uni.showToast({ title: '验证码已发送', icon: 'success' })
+    codeCountdown.value = 60
+    countdownTimer = setInterval(() => {
+      codeCountdown.value--
+      if (codeCountdown.value <= 0 && countdownTimer) {
+        clearInterval(countdownTimer)
+        countdownTimer = null
+      }
+    }, 1000)
+  } catch {
+    // 错误信息已由 request.ts 拦截器 showToast 处理
+  }
 }
 
-function handleLogin() {
+async function handleLogin() {
   if (!loginForm.phone || !loginForm.code) {
     uni.showToast({ title: '请填写完整信息', icon: 'none' })
     return
   }
-  // TODO: 调用后端登录接口
-  uni.showToast({ title: '登录成功', icon: 'success' })
-  uni.reLaunch({ url: '/pages/index/index' })
+  if (loginForm.phone.length !== 11) {
+    uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+    return
+  }
+  try {
+    const result = await loginByMobile(loginForm.phone, loginForm.code)
+    uni.setStorageSync('canteen-token', result.token)
+    uni.showToast({ title: '登录成功', icon: 'success' })
+    setTimeout(() => {
+      uni.switchTab({ url: '/pages/index/index' })
+    }, 500)
+  } catch {
+    // 错误信息已由 request.ts 拦截器 showToast 处理
+  }
 }
 
 function handleRegister() {
@@ -160,9 +176,7 @@ function handleRegister() {
     uni.showToast({ title: '请填写完整信息', icon: 'none' })
     return
   }
-  // TODO: 调用后端注册接口
-  uni.showToast({ title: '注册成功', icon: 'success' })
-  uni.reLaunch({ url: '/pages/index/index' })
+  uni.showToast({ title: '该功能暂未开放', icon: 'none' })
 }
 </script>
 

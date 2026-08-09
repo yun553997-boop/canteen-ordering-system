@@ -60,6 +60,45 @@ public class OrderController {
     }
 
     /**
+     * 订单状态流转：PENDING → PREPARING → READY
+     */
+    @PutMapping("/status/{orderNo}/{status}")
+    public R<Void> updateStatus(@PathVariable String orderNo, @PathVariable String status) {
+        if (!OrderStatus.PREPARING.equals(status) && !OrderStatus.READY.equals(status)) {
+            return R.fail("无效的目标状态，仅允许 PREPARING 或 READY");
+        }
+
+        BizOrder order = bizOrderService.getOne(
+                new LambdaQueryWrapper<BizOrder>()
+                        .eq(BizOrder::getOrderNo, orderNo)
+        );
+
+        if (order == null) {
+            return R.fail("订单不存在");
+        }
+
+        String current = order.getStatus();
+        boolean valid = false;
+        if (OrderStatus.PENDING.equals(current) && OrderStatus.PREPARING.equals(status)) {
+            valid = true;
+        } else if (OrderStatus.PREPARING.equals(current) && OrderStatus.READY.equals(status)) {
+            valid = true;
+        }
+
+        if (!valid) {
+            return R.fail("不允许从 " + current + " 转换到 " + status);
+        }
+
+        BizOrder update = new BizOrder();
+        update.setId(order.getId());
+        update.setStatus(status);
+        bizOrderService.updateById(update);
+
+        log.info("[Order] 状态流转: orderNo={}, {} → {}", orderNo, current, status);
+        return R.ok();
+    }
+
+    /**
      * 分页查询今日订单，支持按状态筛选
      */
     @GetMapping("/list")

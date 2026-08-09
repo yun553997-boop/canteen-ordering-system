@@ -1,166 +1,190 @@
 <template>
   <view class="menu-container">
-    <!-- 顶部搜索栏 -->
-    <view class="search-bar">
-      <view class="search-box">
-        <text class="search-icon">🔍</text>
-        <input
-          v-model="searchKeyword"
-          class="search-input"
-          placeholder="搜索菜品..."
-          @confirm="onSearch"
-        />
+    <!-- 餐次切换 -->
+    <view class="meal-tabs">
+      <view
+        v-for="meal in mealTypes"
+        :key="meal.value"
+        class="meal-tab"
+        :class="{ active: currentMeal === meal.value }"
+        @tap="switchMeal(meal.value)"
+      >
+        {{ meal.label }}
       </view>
     </view>
 
-    <!-- 分类横向滚动 -->
-    <scroll-view class="category-scroll" scroll-x enable-flex>
-      <view
-        v-for="cat in categories"
-        :key="cat.id"
-        class="category-item"
-        :class="{ active: activeCategory === cat.id }"
-        @tap="activeCategory = cat.id"
-      >
-        {{ cat.name }}
-      </view>
-    </scroll-view>
-
     <!-- 菜品列表 -->
-    <scroll-view class="dish-list" scroll-y>
-      <view v-for="dish in filteredDishes" :key="dish.id" class="dish-card">
-        <image class="dish-img" :src="dish.image" mode="aspectFill" />
+    <scroll-view
+      class="dish-list"
+      scroll-y
+      :style="{ paddingBottom: (bottomOffset + 60) + 'px' }"
+    >
+      <view v-for="dish in dishes" :key="dish.id" class="dish-card">
+        <image
+          class="dish-img"
+          :src="dish.imageUrl || defaultImg"
+          mode="aspectFill"
+        />
         <view class="dish-info">
           <text class="dish-name">{{ dish.name }}</text>
           <text class="dish-desc">{{ dish.description }}</text>
-          <view class="dish-bottom">
+          <view class="dish-meta">
             <text class="dish-price">
-              <text class="price-symbol">¥</text>{{ dish.price }}
+              <text class="price-symbol">¥</text>{{ dish.price.toFixed(2) }}
             </text>
-            <view class="cart-control">
+            <text class="dish-stock">剩余: {{ dish.stock }}</text>
+          </view>
+          <view class="dish-bottom">
+            <view v-if="dish.stock === 0" class="sold-out">已售罄</view>
+            <view v-else class="cart-control">
               <button
-                v-if="getCartCount(dish.id) > 0"
+                v-if="getQuantity(dish.id) > 0"
                 class="ctrl-btn minus"
                 size="mini"
                 @tap="removeFromCart(dish)"
               >
                 -
               </button>
-              <text v-if="getCartCount(dish.id) > 0" class="cart-num">
-                {{ getCartCount(dish.id) }}
+              <text v-if="getQuantity(dish.id) > 0" class="cart-num">
+                {{ getQuantity(dish.id) }}
               </text>
-              <button class="ctrl-btn add" size="mini" @tap="addToCart(dish)">
+              <button
+                class="ctrl-btn add"
+                size="mini"
+                :disabled="getQuantity(dish.id) >= dish.stock"
+                @tap="addToCart(dish)"
+              >
                 +
               </button>
             </view>
           </view>
         </view>
       </view>
-      <view v-if="filteredDishes.length === 0" class="empty-tip">
-        暂无菜品
-      </view>
+      <view v-if="dishes.length === 0" class="empty-tip">暂无菜品</view>
     </scroll-view>
 
     <!-- 底部购物车栏 -->
-    <view v-if="cartTotalCount > 0" class="cart-bar">
-      <view class="cart-info" @tap="showCartDetail = !showCartDetail">
+    <view v-if="cartTotalCount > 0" class="cart-bar" :style="{ bottom: bottomOffset + 'px' }">
+      <view class="cart-info">
         <view class="cart-icon-wrap">
           <text class="cart-icon">🛒</text>
           <text class="cart-badge">{{ cartTotalCount }}</text>
         </view>
         <text class="cart-total">¥{{ cartTotalPrice.toFixed(2) }}</text>
       </view>
-      <button class="checkout-btn" @tap="goCheckout">去结算</button>
+      <button class="checkout-btn" @tap="submitOrder">提交订单</button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { getUserDishes, submitOrder as submitOrderApi } from '@/api/user'
+import type { DishItem } from '@/api/user'
 
-interface Dish {
-  id: number
-  name: string
-  image: string
-  description: string
-  price: number
-  categoryId: number
+interface CartEntry {
+  dish: DishItem
+  quantity: number
 }
 
-interface CartItem {
-  dish: Dish
-  count: number
+const mealTypes = [
+  { label: '早餐', value: 'BREAKFAST' },
+  { label: '午餐', value: 'LUNCH' },
+  { label: '晚餐', value: 'DINNER' },
+]
+
+const currentMeal = ref('LUNCH')
+const dishes = ref<DishItem[]>([])
+const cart = reactive<CartEntry[]>([])
+const defaultImg = '/static/logo.png'
+const bottomOffset = ref(50) // tabBar 高度，px
+
+const cartTotalCount = computed(() => cart.reduce((s, i) => s + i.quantity, 0))
+const cartTotalPrice = computed(() => cart.reduce((s, i) => s + i.dish.price * i.quantity, 0))
+
+function getQuantity(dishId: number): number {
+  return cart.find((c) => c.dish.id === dishId)?.quantity || 0
 }
 
-const searchKeyword = ref('')
-const activeCategory = ref(1)
-const showCartDetail = ref(false)
-
-// 模拟分类数据
-const categories = reactive([
-  { id: 1, name: '热菜' },
-  { id: 2, name: '凉菜' },
-  { id: 3, name: '主食' },
-  { id: 4, name: '汤粥' },
-  { id: 5, name: '饮品' }
-])
-
-// 模拟菜品数据
-const dishes = ref<Dish[]>([
-  { id: 1, name: '红烧肉', image: '', description: '精选五花肉，肥而不腻', price: 18.00, categoryId: 1 },
-  { id: 2, name: '宫保鸡丁', image: '', description: '鸡肉嫩滑，花生香脆', price: 15.00, categoryId: 1 },
-  { id: 3, name: '凉拌黄瓜', image: '', description: '清爽可口，开胃小菜', price: 6.00, categoryId: 2 },
-  { id: 4, name: '米饭', image: '', description: '东北优质大米', price: 2.00, categoryId: 3 },
-  { id: 5, name: '番茄蛋汤', image: '', description: '鲜美营养，暖胃好汤', price: 5.00, categoryId: 4 },
-  { id: 6, name: '冰镇酸梅汤', image: '', description: '酸甜解暑', price: 4.00, categoryId: 5 }
-])
-
-// 购物车
-const cart = reactive<CartItem[]>([])
-
-const filteredDishes = computed(() => {
-  let list = dishes.value.filter(d => d.categoryId === activeCategory.value)
-  if (searchKeyword.value) {
-    const kw = searchKeyword.value.toLowerCase()
-    list = list.filter(d => d.name.includes(kw) || d.description.includes(kw))
-  }
-  return list
-})
-
-const cartTotalCount = computed(() => cart.reduce((sum, item) => sum + item.count, 0))
-const cartTotalPrice = computed(() => cart.reduce((sum, item) => sum + item.dish.price * item.count, 0))
-
-function getCartCount(dishId: number): number {
-  const item = cart.find(c => c.dish.id === dishId)
-  return item ? item.count : 0
-}
-
-function addToCart(dish: Dish) {
-  const exist = cart.find(c => c.dish.id === dish.id)
+function addToCart(dish: DishItem) {
+  if (dish.stock <= 0) return
+  const exist = cart.find((c) => c.dish.id === dish.id)
   if (exist) {
-    exist.count++
+    if (exist.quantity < dish.stock) exist.quantity++
   } else {
-    cart.push({ dish, count: 1 })
+    cart.push({ dish, quantity: 1 })
   }
 }
 
-function removeFromCart(dish: Dish) {
-  const idx = cart.findIndex(c => c.dish.id === dish.id)
+function removeFromCart(dish: DishItem) {
+  const idx = cart.findIndex((c) => c.dish.id === dish.id)
   if (idx === -1) return
-  if (cart[idx].count > 1) {
-    cart[idx].count--
+  if (cart[idx].quantity > 1) {
+    cart[idx].quantity--
   } else {
     cart.splice(idx, 1)
   }
 }
 
-function onSearch() {
-  // 搜索逻辑由 computed filteredDishes 自动处理
+function clearCart() {
+  cart.splice(0, cart.length)
 }
 
-function goCheckout() {
-  uni.navigateTo({ url: '/pages/order/detail' })
+async function fetchDishes() {
+  try {
+    const data = await getUserDishes(currentMeal.value)
+    dishes.value = data || []
+  } catch {
+    dishes.value = []
+  }
 }
+
+async function switchMeal(meal: string) {
+  if (currentMeal.value === meal) return
+  currentMeal.value = meal
+  clearCart()
+  await fetchDishes()
+}
+
+async function submitOrder() {
+  // 校验登录
+  const token = uni.getStorageSync('canteen-token')
+  if (!token) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+    setTimeout(() => {
+      uni.switchTab({ url: '/pages/login/login' })
+    }, 800)
+    return
+  }
+
+  if (cart.length === 0) {
+    uni.showToast({ title: '请选择菜品', icon: 'none' })
+    return
+  }
+
+  const payload = {
+    mealType: currentMeal.value,
+    items: cart.map((c) => ({
+      dishId: c.dish.id,
+      quantity: c.quantity,
+    })),
+  }
+
+  try {
+    await submitOrderApi(payload)
+    uni.showToast({ title: '订餐成功', icon: 'success' })
+    clearCart()
+  } catch {
+    // 错误已由 request.ts 拦截器处理
+  }
+}
+
+onMounted(() => {
+  const info = uni.getSystemInfoSync()
+  // safeAreaInsets.bottom 适配刘海屏底部，tabBar 默认 50px
+  bottomOffset.value = (info.safeAreaInsets?.bottom || 0) + 50
+  fetchDishes()
+})
 </script>
 
 <style scoped>
@@ -171,51 +195,25 @@ function goCheckout() {
   background: #f5f5f5;
 }
 
-/* 搜索栏 */
-.search-bar {
+/* 餐次切换 */
+.meal-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 20rpx;
   padding: 20rpx;
   background: #fff;
 }
 
-.search-box {
-  display: flex;
-  align-items: center;
-  background: #f5f5f5;
-  border-radius: 32rpx;
-  padding: 0 24rpx;
-  height: 68rpx;
-}
-
-.search-icon {
-  margin-right: 12rpx;
+.meal-tab {
+  padding: 16rpx 44rpx;
   font-size: 28rpx;
-}
-
-.search-input {
-  flex: 1;
-  font-size: 26rpx;
-}
-
-/* 分类 */
-.category-scroll {
-  white-space: nowrap;
-  background: #fff;
-  padding: 16rpx 20rpx;
-  border-bottom: 1rpx solid #eee;
-}
-
-.category-item {
-  display: inline-block;
-  padding: 12rpx 28rpx;
-  font-size: 26rpx;
   color: #666;
-  border-radius: 28rpx;
-  margin-right: 16rpx;
+  border-radius: 32rpx;
   background: #f5f5f5;
   transition: all 0.3s;
 }
 
-.category-item.active {
+.meal-tab.active {
   background: #FF6B35;
   color: #fff;
   font-weight: bold;
@@ -225,7 +223,6 @@ function goCheckout() {
 .dish-list {
   flex: 1;
   padding: 20rpx;
-  padding-bottom: 120rpx;
 }
 
 .dish-card {
@@ -267,10 +264,10 @@ function goCheckout() {
   white-space: nowrap;
 }
 
-.dish-bottom {
+.dish-meta {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 16rpx;
 }
 
 .dish-price {
@@ -281,6 +278,25 @@ function goCheckout() {
 
 .price-symbol {
   font-size: 24rpx;
+}
+
+.dish-stock {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.dish-bottom {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.sold-out {
+  font-size: 24rpx;
+  color: #ccc;
+  padding: 8rpx 16rpx;
+  background: #f5f5f5;
+  border-radius: 8rpx;
 }
 
 .cart-control {
@@ -305,6 +321,10 @@ function goCheckout() {
   color: #fff;
 }
 
+.ctrl-btn.add[disabled] {
+  background: #ccc;
+}
+
 .ctrl-btn.minus {
   background: #eee;
   color: #333;
@@ -327,7 +347,6 @@ function goCheckout() {
 /* 底部购物车栏 */
 .cart-bar {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
   background: #fff;

@@ -1,12 +1,127 @@
 package com.canteen.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.canteen.dto.CreateOrderRequest;
+import com.canteen.dto.OrderItemRequest;
+import com.canteen.entity.BizDish;
 import com.canteen.entity.BizOrder;
+import com.canteen.entity.BizOrderItem;
+import com.canteen.entity.SysConfig;
+import com.canteen.enums.OrderStatus;
 import com.canteen.mapper.BizOrderMapper;
+import com.canteen.service.BizDishService;
+import com.canteen.service.BizOrderItemService;
 import com.canteen.service.BizOrderService;
+import com.canteen.service.SysConfigService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+@Slf4j
 @Service
 public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
         implements BizOrderService {
+
+    @Autowired
+    private BizDishService bizDishService;
+
+    @Autowired
+    private SysConfigService sysConfigService;
+
+    @Autowired
+    private BizOrderItemService bizOrderItemService;
+
+    private static final Random RANDOM = new Random();
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String createOrder(Long userId, CreateOrderRequest request) {
+        // 1. 校验订餐截止时间
+        String configKey = "DEADLINE_" + request.getMealType();
+        SysConfig deadlineConfig = sysConfigService.getOne(
+                new LambdaQueryWrapper<SysConfig>()
+                        .eq(SysConfig::getConfigKey, configKey)
+        );
+        if (deadlineConfig != null && deadlineConfig.getConfigValue() != null) {
+            try {
+                LocalTime deadline = LocalTime.parse(deadlineConfig.getConfigValue());
+                if (LocalTime.now().isAfter(deadline)) {
+                    throw new RuntimeException("已超过 " + request.getMealType() + " 订餐截止时间 "
+                            + deadlineConfig.getConfigValue());
+                }
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                log.warn("[Order] 截止时间解析失败: {}", deadlineConfig.getConfigValue());
+            }
+        }
+
+        // 2. 遍历菜品：校验库存、锁定价名/单价、计算总金额
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<BizOrderItem> orderItems = new ArrayList<>();
+
+        for (OrderItemRequest item : request.getItems()) {
+            BizDish dish = bizDishService.getById(item.getDishId());
+            if (dish == null) {
+                throw new RuntimeException("菜品不存在: id=" + item.getDishId());
+            }
+            if (dish.getStock() == null || dish.getStock() < item.getQuantity()) {
+                throw new RuntimeException("【" + dish.getName() + "】库存不足，剩余 "
+                        + (dish.getStock() == null ? 0 : dish.getStock()));
+            }
+
+            BigDecimal itemTotal = dish.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+            totalAmount = totalAmount.add(itemTotal);
+
+            BizOrderItem orderItem = new BizOrderItem();
+            orderItem.setDishId(dish.getId());
+            orderItem.setDishName(dish.getName());
+            orderItem.setPrice(dish.getPrice());
+            orderItem.setQuantity(item.getQuantity());
+            orderItems.add(orderItem);
+        }
+
+        // 3. 生成订单号
+        String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String randomPart = String.format("%06d", RANDOM.nextInt(1000000));
+        String orderNo = datePart + randomPart;
+
+        // 4. 逐条扣减库存
+        for (OrderItemRequest item : request.getItems()) {
+            BizDish dish = bizDishService.getById(item.getDishId());
+            BizDish update = new BizDish();
+            update.setId(dish.getId());
+            update.setStock(dish.getStock() - item.getQuantity());
+            bizDishService.updateById(update);
+        }
+
+        // 5. 插入订单主表
+        BizOrder order = new BizOrder();
+        order.setOrderNo(orderNo);
+        order.setUserId(userId);
+        order.setTotalAmount(totalAmount);
+        order.setMealType(request.getMealType());
+        order.setStatus(OrderStatus.PENDING);
+        save(order);
+
+        // 6. 批量插入订单明细
+        for (BizOrderItem item : orderItems) {
+            item.setOrderId(order.getId());
+        }
+        bizOrderItemService.saveBatch(orderItems);
+
+        log.info("[Order] 订单创建成功: orderNo={}, userId={}, mealType={}, total={}, items={}",
+                orderNo, userId, request.getMealType(), totalAmount, orderItems.size());
+        return orderNo;
+    }
 }

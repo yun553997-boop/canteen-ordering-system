@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -72,8 +73,42 @@ public class AuthController {
         result.put("role", user.getRole());
         result.put("username", user.getUsername());
         result.put("userId", user.getId());
+        result.put("isInitialPassword", user.getIsInitialPassword());
 
         return R.ok(result);
+    }
+
+    /**
+     * 修改密码（含首次登录强制修改）
+     */
+    @PutMapping("/update-password")
+    public R<Void> updatePassword(@RequestBody Map<String, String> params) {
+        String newPassword = params.get("newPassword");
+        String oldPassword = params.get("oldPassword");
+
+        if (newPassword == null || newPassword.length() < 6) {
+            return R.fail("新密码长度不能少于6位");
+        }
+
+        long userId = StpUtil.getLoginIdAsLong();
+        SysUser user = sysUserService.getById(userId);
+        if (user == null) {
+            return R.fail("用户不存在");
+        }
+
+        // 如果提供了旧密码，校验是否正确
+        if (oldPassword != null && !oldPassword.isEmpty()) {
+            if (!SaSecureUtil.md5(oldPassword).equals(user.getPassword())) {
+                return R.fail("原密码错误");
+            }
+        }
+
+        user.setPassword(SaSecureUtil.md5(newPassword));
+        user.setIsInitialPassword(0);
+        sysUserService.updateById(user);
+
+        log.info("[Auth] 用户修改密码成功: userId={}", userId);
+        return R.ok();
     }
 
     /**
