@@ -20,6 +20,12 @@
       }
     },
     {
+      "path": "pages/order/list",
+      "style": {
+        "navigationBarTitleText": "我的订单"
+      }
+    },
+    {
       "path": "pages/order/detail",
       "style": {
         "navigationBarTitleText": "订单详情"
@@ -37,7 +43,7 @@
         "text": "点餐"
       },
       {
-        "pagePath": "pages/order/detail",
+        "pagePath": "pages/order/list",
         "text": "订单"
       },
       {

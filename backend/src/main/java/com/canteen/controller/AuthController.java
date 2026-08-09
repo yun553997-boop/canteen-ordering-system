@@ -3,6 +3,7 @@ package com.canteen.controller;
 import cn.dev33.satoken.secure.SaSecureUtil;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.canteen.common.R;
 import com.canteen.entity.SysUser;
 import com.canteen.service.SysUserService;
@@ -67,6 +68,7 @@ public class AuthController {
         }
 
         StpUtil.login(user.getId());
+        StpUtil.getSession().set("role", user.getRole());
 
         Map<String, Object> result = new HashMap<>();
         result.put("token", StpUtil.getTokenInfo().getTokenValue());
@@ -103,9 +105,12 @@ public class AuthController {
             }
         }
 
-        user.setPassword(SaSecureUtil.md5(newPassword));
-        user.setIsInitialPassword(0);
-        sysUserService.updateById(user);
+        // 使用 LambdaUpdateWrapper 显式更新，确保 isInitialPassword 被持久化
+        LambdaUpdateWrapper<SysUser> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(SysUser::getId, userId)
+                .set(SysUser::getPassword, SaSecureUtil.md5(newPassword))
+                .set(SysUser::getIsInitialPassword, 0);
+        sysUserService.update(updateWrapper);
 
         log.info("[Auth] 用户修改密码成功: userId={}", userId);
         return R.ok();
@@ -181,6 +186,7 @@ public class AuthController {
         }
 
         StpUtil.login(user.getId());
+        StpUtil.getSession().set("role", user.getRole());
 
         Map<String, Object> result = new HashMap<>();
         result.put("token", StpUtil.getTokenInfo().getTokenValue());

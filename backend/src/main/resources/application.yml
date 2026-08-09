@@ -34,7 +34,7 @@ sa-token:
   active-timeout: -1
   is-concurrent: true
   is-share: false
-  token-style: tik
+  token-style: jwt
   is-log: true
   jwt-secret-key: canteen-jwt-secret-key-2024
 

@@ -8,6 +8,7 @@ import com.canteen.common.R;
 import com.canteen.entity.BizOrder;
 import com.canteen.enums.OrderStatus;
 import com.canteen.service.BizOrderService;
+import com.canteen.ws.WebSocketServer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -55,6 +57,14 @@ public class OrderController {
         update.setStatus(OrderStatus.COMPLETED);
         bizOrderService.updateById(update);
 
+        // 推送状态变更通知给下单用户
+        Map<String, Object> wsMsg = new HashMap<>();
+        wsMsg.put("type", "ORDER_STATUS_CHANGE");
+        wsMsg.put("message", "您的订单已核销完成！");
+        wsMsg.put("orderNo", orderNo);
+        wsMsg.put("status", OrderStatus.COMPLETED);
+        WebSocketServer.sendToUser(order.getUserId(), wsMsg);
+
         log.info("[Order] 核销订单: orderNo={}, {} → {}", orderNo, order.getStatus(), OrderStatus.COMPLETED);
         return R.ok();
     }
@@ -94,24 +104,43 @@ public class OrderController {
         update.setStatus(status);
         bizOrderService.updateById(update);
 
+        // 推送状态变更通知给下单用户
+        String statusLabel = OrderStatus.PREPARING.equals(status) ? "制作中" : "待取餐";
+        Map<String, Object> wsMsg = new HashMap<>();
+        wsMsg.put("type", "ORDER_STATUS_CHANGE");
+        wsMsg.put("message", "您的订单状态已更新为：" + statusLabel);
+        wsMsg.put("orderNo", orderNo);
+        wsMsg.put("status", status);
+        WebSocketServer.sendToUser(order.getUserId(), wsMsg);
+
         log.info("[Order] 状态流转: orderNo={}, {} → {}", orderNo, current, status);
         return R.ok();
     }
 
     /**
-     * 分页查询今日订单，支持按状态筛选
+     * 分页查询订单，支持按订单号、状态、时间段筛选（默认查询今日）
      */
     @GetMapping("/list")
     public R<Page<BizOrder>> list(@RequestParam(defaultValue = "1") Integer page,
                                    @RequestParam(defaultValue = "10") Integer pageSize,
-                                   @RequestParam(required = false) String status) {
-        LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-        LocalDateTime todayEnd = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+                                   @RequestParam(required = false) String status,
+                                   @RequestParam(required = false) String orderNo,
+                                   @RequestParam(required = false) String startTime,
+                                   @RequestParam(required = false) String endTime) {
+        LocalDateTime start = (startTime != null && !startTime.isEmpty())
+                ? LocalDateTime.parse(startTime)
+                : LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+        LocalDateTime end = (endTime != null && !endTime.isEmpty())
+                ? LocalDateTime.parse(endTime)
+                : LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
 
         LambdaQueryWrapper<BizOrder> wrapper = new LambdaQueryWrapper<>();
-        wrapper.between(BizOrder::getCreateTime, todayStart, todayEnd);
+        wrapper.between(BizOrder::getCreateTime, start, end);
         if (status != null && !status.isEmpty()) {
             wrapper.eq(BizOrder::getStatus, status);
+        }
+        if (orderNo != null && !orderNo.isEmpty()) {
+            wrapper.like(BizOrder::getOrderNo, orderNo);
         }
         wrapper.orderByDesc(BizOrder::getCreateTime);
 

@@ -162,6 +162,19 @@ async function handleLogin() {
   try {
     const result = await loginByMobile(loginForm.phone, loginForm.code)
     uni.setStorageSync('canteen-token', result.token)
+    // 重连 WebSocket（使用新 token）
+    uni.closeSocket({
+      success() {
+        uni.connectSocket({
+          url: 'ws://localhost:8000/ws?token=' + result.token,
+        })
+      },
+      fail() {
+        uni.connectSocket({
+          url: 'ws://localhost:8000/ws?token=' + result.token,
+        })
+      },
+    })
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => {
       uni.switchTab({ url: '/pages/index/index' })

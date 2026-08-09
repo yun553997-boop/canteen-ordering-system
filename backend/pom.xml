@@ -65,6 +65,19 @@
             <version>${sa-token.version}</version>
         </dependency>
 
+        <!-- Sa-Token JWT 插件（无状态 token，服务重启不丢失） -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-jwt</artifactId>
+            <version>${sa-token.version}</version>
+        </dependency>
+
+        <!-- WebSocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <!-- Apache POI (Excel) -->
         <dependency>
             <groupId>org.apache.poi</groupId>

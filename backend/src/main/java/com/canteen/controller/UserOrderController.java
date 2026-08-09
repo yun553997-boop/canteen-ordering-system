@@ -8,8 +8,10 @@ import com.canteen.common.R;
 import com.canteen.dto.CreateOrderRequest;
 import com.canteen.entity.BizOrder;
 import com.canteen.entity.BizOrderItem;
+import com.canteen.enums.UserRole;
 import com.canteen.service.BizOrderItemService;
 import com.canteen.service.BizOrderService;
+import com.canteen.ws.WebSocketServer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -55,6 +57,13 @@ public class UserOrderController {
             Long userId = StpUtil.getLoginIdAsLong();
             String orderNo = bizOrderService.createOrder(userId, request);
 
+            // 向所有在线的食堂管理员推送新订单通知
+            Map<String, Object> wsMsg = new HashMap<>();
+            wsMsg.put("type", "NEW_ORDER");
+            wsMsg.put("message", "您有新的订餐订单，请及时处理！");
+            wsMsg.put("orderNo", orderNo);
+            WebSocketServer.sendToRole(UserRole.ADMIN_CANTEEN, wsMsg);
+
             Map<String, Object> result = new HashMap<>();
             result.put("orderNo", orderNo);
             return R.ok(result);
@@ -79,18 +88,21 @@ public class UserOrderController {
     }
 
     /**
-     * 获取订单详情：主表信息 + 菜品明细列表
+     * 获取订单详情：主表信息 + 菜品明细列表（通过订单号查询）
      */
-    @GetMapping("/detail/{orderId}")
-    public R<Map<String, Object>> detail(@PathVariable Long orderId) {
-        BizOrder order = bizOrderService.getById(orderId);
+    @GetMapping("/detail/{orderNo}")
+    public R<Map<String, Object>> detail(@PathVariable String orderNo) {
+        BizOrder order = bizOrderService.getOne(
+                new LambdaQueryWrapper<BizOrder>()
+                        .eq(BizOrder::getOrderNo, orderNo)
+        );
         if (order == null) {
             return R.fail("订单不存在");
         }
 
         List<BizOrderItem> items = bizOrderItemService.list(
                 new LambdaQueryWrapper<BizOrderItem>()
-                        .eq(BizOrderItem::getOrderId, orderId)
+                        .eq(BizOrderItem::getOrderId, order.getId())
         );
 
         Map<String, Object> result = new HashMap<>();
