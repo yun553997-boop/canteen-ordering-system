@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.canteen.common.R;
 import com.canteen.entity.BizOrder;
+import com.canteen.enums.NotificationType;
 import com.canteen.enums.OrderStatus;
 import com.canteen.service.BizOrderService;
+import com.canteen.service.SysNotificationService;
 import com.canteen.ws.WebSocketServer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ import java.util.Map;
 @SaCheckRole(value = {"ADMIN_CANTEEN", "ADMIN_SYSTEM"}, mode = SaMode.OR)
 public class OrderController {
 
+    private final SysNotificationService sysNotificationService;
     private final BizOrderService bizOrderService;
 
     /**
@@ -64,6 +67,14 @@ public class OrderController {
         wsMsg.put("orderNo", orderNo);
         wsMsg.put("status", OrderStatus.COMPLETED);
         WebSocketServer.sendToUser(order.getUserId(), wsMsg);
+
+        // 持久化通知
+        sysNotificationService.create(
+                order.getUserId(),
+                NotificationType.ORDER_READY,
+                "订单核销",
+                "订单号 " + orderNo + " 已核销完成"
+        );
 
         log.info("[Order] 核销订单: orderNo={}, {} → {}", orderNo, order.getStatus(), OrderStatus.COMPLETED);
         return R.ok();
@@ -112,6 +123,16 @@ public class OrderController {
         wsMsg.put("orderNo", orderNo);
         wsMsg.put("status", status);
         WebSocketServer.sendToUser(order.getUserId(), wsMsg);
+
+        // 持久化通知
+        String notifType = OrderStatus.PREPARING.equals(status)
+                ? NotificationType.ORDER_READY : "ORDER_READY";
+        sysNotificationService.create(
+                order.getUserId(),
+                notifType,
+                "订单状态更新",
+                "订单号 " + orderNo + " 状态已更新为：" + statusLabel
+        );
 
         log.info("[Order] 状态流转: orderNo={}, {} → {}", orderNo, current, status);
         return R.ok();

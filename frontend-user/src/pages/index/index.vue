@@ -81,6 +81,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { getUserDishes, submitOrder as submitOrderApi } from '@/api/user'
 import type { DishItem } from '@/api/user'
+import { getToken } from '@/utils/storage'
 
 interface CartEntry {
   dish: DishItem
@@ -148,7 +149,7 @@ async function switchMeal(meal: string) {
 
 async function submitOrder() {
   // 校验登录
-  const token = uni.getStorageSync('canteen-token')
+  const token = getToken()
   if (!token) {
     uni.showToast({ title: '请先登录', icon: 'none' })
     setTimeout(() => {

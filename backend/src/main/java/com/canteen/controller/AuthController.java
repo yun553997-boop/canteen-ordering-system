@@ -1,5 +1,6 @@
 package com.canteen.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.secure.SaSecureUtil;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -193,6 +195,27 @@ public class AuthController {
         result.put("role", user.getRole());
         result.put("username", user.getUsername());
         result.put("userId", user.getId());
+
+        return R.ok(result);
+    }
+
+    /**
+     * 获取当前登录用户信息（用于 token 校验）
+     */
+    @SaCheckLogin
+    @GetMapping("/me")
+    public R<Map<String, Object>> me() {
+        long userId = StpUtil.getLoginIdAsLong();
+        SysUser user = sysUserService.getById(userId);
+        if (user == null) {
+            return R.fail("用户不存在");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", user.getId());
+        result.put("username", user.getUsername());
+        result.put("phone", user.getPhone());
+        result.put("role", user.getRole());
 
         return R.ok(result);
     }

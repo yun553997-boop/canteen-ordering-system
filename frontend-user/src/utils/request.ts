@@ -5,6 +5,8 @@
  * - 401/403 自动跳转登录页
  */
 
+import { getToken, removeToken } from './storage'
+
 const BASE_URL = '/api/v1'
 
 interface RequestConfig {
@@ -26,7 +28,7 @@ function request<T>(config: RequestConfig): Promise<T> {
       uni.showLoading({ title: '加载中...', mask: true })
     }
 
-    const token = uni.getStorageSync('canteen-token')
+    const token = getToken()
 
     const header: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -45,7 +47,7 @@ function request<T>(config: RequestConfig): Promise<T> {
         if (result.code === 200) {
           resolve(result.data)
         } else if (result.code === 401 || result.code === 403) {
-          uni.removeStorageSync('canteen-token')
+          removeToken()
           uni.reLaunch({ url: '/pages/login/login' })
           reject(new Error(result.message || '登录已过期'))
         } else {
@@ -82,4 +84,8 @@ export function get<T>(url: string, params?: Record<string, unknown>): Promise<T
 
 export function post<T>(url: string, data?: Record<string, unknown>): Promise<T> {
   return request<T>({ url, method: 'POST', data })
+}
+
+export function put<T>(url: string, data?: Record<string, unknown>): Promise<T> {
+  return request<T>({ url, method: 'PUT', data })
 }

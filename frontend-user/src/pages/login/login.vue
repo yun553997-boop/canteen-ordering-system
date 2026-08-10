@@ -109,8 +109,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { sendSms, loginByMobile } from '@/api/auth'
+import { getToken, setToken } from '@/utils/storage'
 
 const activeTab = ref<'login' | 'register'>('login')
 const codeCountdown = ref(0)
@@ -161,7 +162,7 @@ async function handleLogin() {
   }
   try {
     const result = await loginByMobile(loginForm.phone, loginForm.code)
-    uni.setStorageSync('canteen-token', result.token)
+    setToken(result.token)
     // 重连 WebSocket（使用新 token）
     uni.closeSocket({
       success() {
@@ -183,6 +184,13 @@ async function handleLogin() {
     // 错误信息已由 request.ts 拦截器 showToast 处理
   }
 }
+
+// 进入登录页时检查是否已登录，已登录则直接跳转首页
+onMounted(() => {
+  if (getToken()) {
+    uni.switchTab({ url: '/pages/index/index' })
+  }
+})
 
 function handleRegister() {
   if (!registerForm.phone || !registerForm.code) {

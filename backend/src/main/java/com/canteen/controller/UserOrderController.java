@@ -8,9 +8,13 @@ import com.canteen.common.R;
 import com.canteen.dto.CreateOrderRequest;
 import com.canteen.entity.BizOrder;
 import com.canteen.entity.BizOrderItem;
+import com.canteen.entity.SysUser;
+import com.canteen.enums.NotificationType;
 import com.canteen.enums.UserRole;
 import com.canteen.service.BizOrderItemService;
 import com.canteen.service.BizOrderService;
+import com.canteen.service.SysNotificationService;
+import com.canteen.service.SysUserService;
 import com.canteen.ws.WebSocketServer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +33,8 @@ public class UserOrderController {
 
     private final BizOrderService bizOrderService;
     private final BizOrderItemService bizOrderItemService;
+    private final SysNotificationService sysNotificationService;
+    private final SysUserService sysUserService;
 
     /**
      * 用户下单：校验库存 → 计算金额 → 扣减库存 → 生成订单
@@ -63,6 +69,21 @@ public class UserOrderController {
             wsMsg.put("message", "您有新的订餐订单，请及时处理！");
             wsMsg.put("orderNo", orderNo);
             WebSocketServer.sendToRole(UserRole.ADMIN_CANTEEN, wsMsg);
+
+            // 持久化通知：给每个食堂管理员写入一条
+            List<SysUser> canteenAdmins = sysUserService.list(
+                    new LambdaQueryWrapper<SysUser>()
+                            .eq(SysUser::getRole, UserRole.ADMIN_CANTEEN)
+                            .eq(SysUser::getStatus, 1)
+            );
+            for (SysUser admin : canteenAdmins) {
+                sysNotificationService.create(
+                        admin.getId(),
+                        NotificationType.NEW_ORDER,
+                        "新订单",
+                        "订单号 " + orderNo + " 有新订单待处理"
+                );
+            }
 
             Map<String, Object> result = new HashMap<>();
             result.put("orderNo", orderNo);

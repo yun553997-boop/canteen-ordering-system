@@ -14,6 +14,18 @@
       }
     },
     {
+      "path": "pages/mine/mine",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/notification/list",
+      "style": {
+        "navigationBarTitleText": "消息通知"
+      }
+    },
+    {
       "path": "pages/login/login",
       "style": {
         "navigationBarTitleText": "登录/注册"
@@ -47,7 +59,7 @@
         "text": "订单"
       },
       {
-        "pagePath": "pages/login/login",
+        "pagePath": "pages/mine/mine",
         "text": "我的"
       }
     ]
