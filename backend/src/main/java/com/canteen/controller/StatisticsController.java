@@ -40,10 +40,20 @@ public class StatisticsController {
     // ==================== 概览接口 ====================
 
     @GetMapping("/overview")
-    public R<Map<String, Object>> overview(@RequestParam(defaultValue = "today") String period) {
-        LocalDateTime[] range = parsePeriod(period);
-        LocalDateTime start = range[0];
-        LocalDateTime end = range[1];
+    public R<Map<String, Object>> overview(@RequestParam(defaultValue = "today") String period,
+                                           @RequestParam(required = false) String startTime,
+                                           @RequestParam(required = false) String endTime) {
+        LocalDateTime start, end;
+        boolean isCustom = (startTime != null && !startTime.isEmpty());
+
+        if (isCustom) {
+            start = LocalDateTime.parse(startTime);
+            end = LocalDateTime.parse(endTime);
+        } else {
+            LocalDateTime[] range = parsePeriod(period);
+            start = range[0];
+            end = range[1];
+        }
 
         LambdaQueryWrapper<BizOrder> wrapper = new LambdaQueryWrapper<>();
         wrapper.between(BizOrder::getCreateTime, start, end);
@@ -51,7 +61,7 @@ public class StatisticsController {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("cards", buildCards(orders));
-        result.put("trend", buildTrend(orders, period));
+        result.put("trend", buildTrend(orders, period, isCustom, start, end));
         result.put("statusRatio", buildStatusRatio(orders));
         result.put("topDishes", buildTopDishes(orders));
         return R.ok(result);
@@ -75,24 +85,27 @@ public class StatisticsController {
 
     // ==================== 趋势折线图 ====================
 
-    private List<Map<String, Object>> buildTrend(List<BizOrder> orders, String period) {
+    private List<Map<String, Object>> buildTrend(List<BizOrder> orders, String period,
+                                                  boolean isCustom, LocalDateTime start, LocalDateTime end) {
         DateTimeFormatter fmt;
         List<String> allLabels;
 
-        if ("today".equals(period) || "yesterday".equals(period)) {
+        if (isCustom || "last_7_days".equals(period) || "last_30_days".equals(period)) {
+            // 按日期
+            fmt = DateTimeFormatter.ofPattern("MM-dd");
+            allLabels = new ArrayList<>();
+            LocalDate cursor = start.toLocalDate();
+            LocalDate endDate = end.toLocalDate();
+            while (!cursor.isAfter(endDate)) {
+                allLabels.add(cursor.format(fmt));
+                cursor = cursor.plusDays(1);
+            }
+        } else {
             // 按小时
             fmt = DateTimeFormatter.ofPattern("HH:00");
             allLabels = new ArrayList<>();
             for (int h = 0; h < 24; h++) {
                 allLabels.add(String.format("%02d:00", h));
-            }
-        } else {
-            // 按日期
-            fmt = DateTimeFormatter.ofPattern("MM-dd");
-            allLabels = new ArrayList<>();
-            LocalDate start = "last_7_days".equals(period) ? LocalDate.now().minusDays(6) : LocalDate.now();
-            for (int i = 0; i < 7; i++) {
-                allLabels.add(start.plusDays(i).format(DateTimeFormatter.ofPattern("MM-dd")));
             }
         }
 
@@ -151,7 +164,6 @@ public class StatisticsController {
 
         return dishQtyMap.entrySet().stream()
                 .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
-                .limit(5)
                 .map(e -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("dishName", e.getKey());
@@ -248,6 +260,10 @@ public class StatisticsController {
             };
             case "last_7_days" -> new LocalDateTime[]{
                     LocalDateTime.of(today.minusDays(6), LocalTime.MIN),
+                    LocalDateTime.of(today, LocalTime.MAX)
+            };
+            case "last_30_days" -> new LocalDateTime[]{
+                    LocalDateTime.of(today.minusDays(29), LocalTime.MIN),
                     LocalDateTime.of(today, LocalTime.MAX)
             };
             default -> new LocalDateTime[]{
