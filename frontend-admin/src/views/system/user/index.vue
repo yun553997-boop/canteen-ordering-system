@@ -53,7 +53,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+        <el-button type="primary" :loading="submitting" :disabled="!hasChanged" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -63,7 +63,7 @@
 import { CirclePlus, Delete, Edit } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import type { FormInstance, FormRules } from "element-plus";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { System } from "@/api/interface";
 import { createCanteenStaff, getSystemUserList } from "@/api/modules/system";
@@ -108,9 +108,16 @@ const columns = reactive<ColumnProps<System.SysUserInfo>[]>([
 const dialogVisible = ref(false);
 const submitting = ref(false);
 const editingId = ref<number | null>(null);
+const originalPhone = ref("");
 const formRef = ref<FormInstance>();
 const defaultForm = { username: "", phone: "" };
 const form = reactive({ ...defaultForm });
+
+// 编辑模式下内容是否有变化
+const hasChanged = computed(() => {
+  if (!editingId.value) return true; // 新增模式始终允许确认
+  return form.phone !== originalPhone.value;
+});
 
 const rules: FormRules = {
   username: [
@@ -128,8 +135,10 @@ function openDialog(row?: System.SysUserInfo) {
     editingId.value = row.id!;
     form.username = row.username;
     form.phone = row.phone;
+    originalPhone.value = row.phone;
   } else {
     editingId.value = null;
+    originalPhone.value = "";
     Object.assign(form, defaultForm);
   }
   dialogVisible.value = true;
