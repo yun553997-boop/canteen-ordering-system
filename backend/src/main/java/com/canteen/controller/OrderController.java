@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.annotation.SaMode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.canteen.annotation.LogRecord;
 import com.canteen.common.R;
 import com.canteen.entity.BizOrder;
 import com.canteen.enums.NotificationType;
@@ -34,6 +35,7 @@ public class OrderController {
     /**
      * 核销订单：校验订单存在且状态为 PENDING 或 READY，修改为 COMPLETED
      */
+    @LogRecord(module = "订单管理", action = "核销订单")
     @PostMapping("/verify")
     public R<Void> verify(@RequestBody Map<String, String> params) {
         String orderNo = params.get("orderNo");
@@ -83,6 +85,7 @@ public class OrderController {
     /**
      * 订单状态流转：PENDING → PREPARING → READY
      */
+    @LogRecord(module = "订单管理", action = "更新订单状态")
     @PutMapping("/status/{orderNo}/{status}")
     public R<Void> updateStatus(@PathVariable String orderNo, @PathVariable String status) {
         if (!OrderStatus.PREPARING.equals(status) && !OrderStatus.READY.equals(status)) {

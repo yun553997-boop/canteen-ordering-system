@@ -10,6 +10,10 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.Statement;
+
 @Component
 public class DataInitRunner implements ApplicationRunner {
 
@@ -19,10 +23,39 @@ public class DataInitRunner implements ApplicationRunner {
     @Autowired
     private SysConfigService sysConfigService;
 
+    @Autowired
+    private DataSource dataSource;
+
     @Override
     public void run(ApplicationArguments args) {
+        initTables();
         initRootUser();
         initSystemConfig();
+    }
+
+    private void initTables() {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(
+                "CREATE TABLE IF NOT EXISTS sys_operation_log (" +
+                "  id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  operator_id BIGINT," +
+                "  operator_name VARCHAR(64)," +
+                "  module VARCHAR(64)," +
+                "  action VARCHAR(64)," +
+                "  method VARCHAR(255)," +
+                "  request_params TEXT," +
+                "  result VARCHAR(16)," +
+                "  error_msg VARCHAR(512)," +
+                "  ip VARCHAR(64)," +
+                "  cost_time BIGINT," +
+                "  create_time DATETIME" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+            System.out.println("====== [DataInit] sys_operation_log 表就绪 ======");
+        } catch (Exception e) {
+            System.err.println("[DataInit] 建表失败: " + e.getMessage());
+        }
     }
 
     private void initRootUser() {

@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.annotation.SaMode;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.canteen.annotation.LogRecord;
 import com.canteen.common.R;
 import com.canteen.dto.CreateOrderRequest;
 import com.canteen.entity.BizOrder;
@@ -39,6 +40,7 @@ public class UserOrderController {
     /**
      * 用户下单：校验库存 → 计算金额 → 扣减库存 → 生成订单
      */
+    @LogRecord(module = "用户订单", action = "提交订单")
     @PostMapping("/create")
     public R<Map<String, Object>> create(@RequestBody CreateOrderRequest request) {
         if (request.getMealType() == null || request.getMealType().isEmpty()) {

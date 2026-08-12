@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.annotation.SaMode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.canteen.annotation.LogRecord;
 import com.canteen.common.R;
 import com.canteen.entity.BizDish;
 import com.canteen.enums.DishStatus;
@@ -51,6 +52,7 @@ public class DishController {
     /**
      * 新增菜品
      */
+    @LogRecord(module = "菜品管理", action = "新增菜品")
     @PostMapping("/add")
     public R<Void> add(@RequestBody BizDish dish) {
         bizDishService.save(dish);
@@ -61,6 +63,7 @@ public class DishController {
     /**
      * 更新菜品信息
      */
+    @LogRecord(module = "菜品管理", action = "编辑菜品")
     @PutMapping("/update")
     public R<Void> update(@RequestBody BizDish dish) {
         if (dish.getId() == null) {
@@ -74,6 +77,7 @@ public class DishController {
     /**
      * 快捷上下架：PUT /api/v1/admin/dishes/status/{id}/{status}
      */
+    @LogRecord(module = "菜品管理", action = "上下架菜品")
     @PutMapping("/status/{id}/{status}")
     public R<Void> updateStatus(@PathVariable Long id, @PathVariable String status) {
         if (!DishStatus.ON.equals(status) && !DishStatus.OFF.equals(status) && !DishStatus.PAUSED.equals(status)) {
@@ -97,6 +101,7 @@ public class DishController {
     /**
      * 逻辑删除菜品
      */
+    @LogRecord(module = "菜品管理", action = "删除菜品")
     @DeleteMapping("/delete/{id}")
     public R<Void> delete(@PathVariable Long id) {
         bizDishService.removeById(id);

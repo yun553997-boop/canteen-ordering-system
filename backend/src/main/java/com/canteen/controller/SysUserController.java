@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.secure.SaSecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.canteen.annotation.LogRecord;
 import com.canteen.common.R;
 import com.canteen.entity.SysUser;
 import com.canteen.enums.UserRole;
@@ -26,6 +27,7 @@ public class SysUserController {
     /**
      * 开通食堂管理员账号
      */
+    @LogRecord(module = "人员管理", action = "开通食堂账号")
     @PostMapping("/canteen-staff")
     public R<Void> createCanteenStaff(@RequestBody Map<String, String> params) {
         String username = params.get("username");
