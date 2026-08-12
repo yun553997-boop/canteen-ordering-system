@@ -7,7 +7,10 @@
           <text class="avatar-letter">{{ avatarLetter }}</text>
         </view>
         <view class="user-info">
-          <text class="username">{{ username }}</text>
+          <view class="name-row">
+            <text class="username">{{ username }}</text>
+            <text v-if="role === 'ADMIN_CANTEEN'" class="role-tag">食堂管理员</text>
+          </view>
           <text class="phone">{{ maskedPhone }}</text>
         </view>
       </view>
@@ -37,6 +40,8 @@
     <view class="logout-area">
       <button class="logout-btn" @tap="handleLogout">退出登录</button>
     </view>
+
+    <CustomTabBar />
   </view>
 </template>
 
@@ -46,9 +51,11 @@ import { onShow } from '@dcloudio/uni-app'
 import { getToken, getUserInfo, removeToken, removeUserInfo, setUserInfo, type UserInfo } from '@/utils/storage'
 import { getUnreadCount } from '@/api/notification'
 import { getCurrentUser } from '@/api/auth'
+import CustomTabBar from '@/components/CustomTabBar.vue'
 
 const username = ref('未登录')
 const phone = ref('')
+const role = ref('')
 const unreadCount = ref(0)
 
 const avatarLetter = computed(() => {
@@ -73,6 +80,7 @@ async function loadUserInfo() {
   if (cached) {
     username.value = cached.username
     phone.value = cached.phone || ''
+    role.value = cached.role || ''
   }
 
   // 异步请求最新信息
@@ -81,6 +89,7 @@ async function loadUserInfo() {
     if (data) {
       username.value = data.username
       phone.value = data.phone || ''
+      role.value = data.role || ''
       setUserInfo(data as UserInfo)
     }
   } catch {
@@ -167,6 +176,20 @@ onShow(() => {
 .user-info {
   display: flex;
   flex-direction: column;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.role-tag {
+  font-size: 20rpx;
+  background: rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
 }
 
 .username {

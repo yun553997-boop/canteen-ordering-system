@@ -74,6 +74,8 @@
       </view>
       <button class="checkout-btn" @tap="submitOrder">提交订单</button>
     </view>
+
+    <CustomTabBar />
   </view>
 </template>
 
@@ -82,6 +84,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { getUserDishes, submitOrder as submitOrderApi } from '@/api/user'
 import type { DishItem } from '@/api/user'
 import { getToken } from '@/utils/storage'
+import CustomTabBar from '@/components/CustomTabBar.vue'
 
 interface CartEntry {
   dish: DishItem
@@ -153,7 +156,7 @@ async function submitOrder() {
   if (!token) {
     uni.showToast({ title: '请先登录', icon: 'none' })
     setTimeout(() => {
-      uni.switchTab({ url: '/pages/login/login' })
+      uni.reLaunch({ url: '/pages/login/login' })
     }, 800)
     return
   }

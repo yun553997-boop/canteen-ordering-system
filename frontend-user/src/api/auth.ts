@@ -22,10 +22,17 @@ export function sendSms(phone: string): Promise<void> {
 }
 
 /**
- * 手机号 + 验证码登录
+ * 手机号 + 验证码登录（普通用户）
  */
 export function loginByMobile(phone: string, code: string): Promise<LoginResult> {
   return post<LoginResult>('/auth/login/mobile', { phone, code })
+}
+
+/**
+ * 管理员用户名/手机号 + 密码登录
+ */
+export function loginByAdmin(username: string, password: string): Promise<LoginResult> {
+  return post<LoginResult>('/auth/login/admin', { username, password })
 }
 
 /** 获取当前登录用户信息 */

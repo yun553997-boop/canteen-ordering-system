@@ -36,6 +36,8 @@
         <text class="arrow">查看详情 →</text>
       </view>
     </view>
+
+    <CustomTabBar />
   </view>
 </template>
 
@@ -44,6 +46,7 @@ import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getOrderList } from '@/api/user'
 import type { OrderSummary } from '@/api/user'
+import CustomTabBar from '@/components/CustomTabBar.vue'
 
 const orders = ref<OrderSummary[]>([])
 

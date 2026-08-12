@@ -5,30 +5,30 @@
       <text class="app-name">食堂订餐</text>
     </view>
 
-    <!-- 登录/注册 Tab 切换 -->
-    <view class="tab-bar">
+    <!-- 角色切换 Tab -->
+    <view class="role-tabs">
       <view
-        class="tab-item"
-        :class="{ active: activeTab === 'login' }"
-        @tap="activeTab = 'login'"
+        class="role-tab"
+        :class="{ active: loginRole === 'user' }"
+        @tap="loginRole = 'user'"
       >
-        登录
+        普通用户
       </view>
       <view
-        class="tab-item"
-        :class="{ active: activeTab === 'register' }"
-        @tap="activeTab = 'register'"
+        class="role-tab"
+        :class="{ active: loginRole === 'admin' }"
+        @tap="loginRole = 'admin'"
       >
-        注册
+        食堂管理员
       </view>
     </view>
 
-    <!-- 登录表单 -->
-    <view v-if="activeTab === 'login'" class="form-box">
+    <!-- 普通用户：手机号 + 验证码登录 -->
+    <view v-if="loginRole === 'user'" class="form-box">
       <view class="input-group">
         <text class="input-label">手机号</text>
         <input
-          v-model="loginForm.phone"
+          v-model="smsForm.phone"
           class="input-field"
           type="number"
           placeholder="请输入手机号"
@@ -39,7 +39,7 @@
         <text class="input-label">验证码</text>
         <view class="code-row">
           <input
-            v-model="loginForm.code"
+            v-model="smsForm.code"
             class="input-field code-input"
             type="number"
             placeholder="请输入验证码"
@@ -55,51 +55,31 @@
           </button>
         </view>
       </view>
-      <button class="submit-btn" @tap="handleLogin">登 录</button>
+      <button class="submit-btn" @tap="handleSmsLogin">登 录</button>
     </view>
 
-    <!-- 注册表单 -->
+    <!-- 食堂管理员：用户名/手机号 + 密码登录 -->
     <view v-else class="form-box">
       <view class="input-group">
-        <text class="input-label">手机号</text>
+        <text class="input-label">用户名 / 手机号</text>
         <input
-          v-model="registerForm.phone"
-          class="input-field"
-          type="number"
-          placeholder="请输入手机号"
-          maxlength="11"
-        />
-      </view>
-      <view class="input-group">
-        <text class="input-label">验证码</text>
-        <view class="code-row">
-          <input
-            v-model="registerForm.code"
-            class="input-field code-input"
-            type="number"
-            placeholder="请输入验证码"
-            maxlength="6"
-          />
-          <button
-            class="code-btn"
-            :disabled="codeCountdown > 0"
-            size="mini"
-            @tap="sendCode"
-          >
-            {{ codeCountdown > 0 ? codeCountdown + 's' : '获取验证码' }}
-          </button>
-        </view>
-      </view>
-      <view class="input-group">
-        <text class="input-label">昵称</text>
-        <input
-          v-model="registerForm.nickname"
+          v-model="adminForm.username"
           class="input-field"
           type="text"
-          placeholder="请输入昵称"
+          placeholder="请输入用户名或手机号"
         />
       </view>
-      <button class="submit-btn" @tap="handleRegister">注 册</button>
+      <view class="input-group">
+        <text class="input-label">密码</text>
+        <input
+          v-model="adminForm.password"
+          class="input-field"
+          type="text"
+          placeholder="请输入密码"
+          password
+        />
+      </view>
+      <button class="submit-btn" @tap="handleAdminLogin">登 录</button>
     </view>
 
     <view class="agreement-text">
@@ -110,27 +90,21 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { sendSms, loginByMobile } from '@/api/auth'
-import { getToken, setToken } from '@/utils/storage'
+import { sendSms, loginByMobile, loginByAdmin } from '@/api/auth'
+import { getToken, setToken, setUserInfo } from '@/utils/storage'
 
-const activeTab = ref<'login' | 'register'>('login')
+const loginRole = ref<'user' | 'admin'>('user')
 const codeCountdown = ref(0)
 
-const loginForm = reactive({
-  phone: '',
-  code: ''
-})
-
-const registerForm = reactive({
-  phone: '',
-  code: '',
-  nickname: ''
-})
+const smsForm = reactive({ phone: '', code: '' })
+const adminForm = reactive({ username: '', password: '' })
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
+// ========== 发送验证码 ==========
+
 async function sendCode() {
-  const phone = activeTab.value === 'login' ? loginForm.phone : registerForm.phone
+  const phone = smsForm.phone
   if (!phone || phone.length !== 11) {
     uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
     return
@@ -146,58 +120,100 @@ async function sendCode() {
         countdownTimer = null
       }
     }, 1000)
-  } catch {
-    // 错误信息已由 request.ts 拦截器 showToast 处理
-  }
+  } catch { /* 错误已由拦截器处理 */ }
 }
 
-async function handleLogin() {
-  if (!loginForm.phone || !loginForm.code) {
+// ========== 普通用户登录 ==========
+
+async function handleSmsLogin() {
+  if (!smsForm.phone || !smsForm.code) {
     uni.showToast({ title: '请填写完整信息', icon: 'none' })
     return
   }
-  if (loginForm.phone.length !== 11) {
+  if (smsForm.phone.length !== 11) {
     uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
     return
   }
   try {
-    const result = await loginByMobile(loginForm.phone, loginForm.code)
-    setToken(result.token)
-    // 重连 WebSocket（使用新 token）
-    uni.closeSocket({
-      success() {
-        uni.connectSocket({
-          url: 'ws://localhost:8000/ws?token=' + result.token,
-        })
-      },
-      fail() {
-        uni.connectSocket({
-          url: 'ws://localhost:8000/ws?token=' + result.token,
-        })
-      },
-    })
-    uni.showToast({ title: '登录成功', icon: 'success' })
-    setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' })
-    }, 500)
-  } catch {
-    // 错误信息已由 request.ts 拦截器 showToast 处理
-  }
+    const result = await loginByMobile(smsForm.phone, smsForm.code)
+    onLoginSuccess(result.token, result.role, result.username, result.userId)
+  } catch { /* 错误已由拦截器处理 */ }
 }
 
-// 进入登录页时检查是否已登录，已登录则直接跳转首页
-onMounted(() => {
-  if (getToken()) {
-    uni.switchTab({ url: '/pages/index/index' })
-  }
-})
+// ========== 管理员登录 ==========
 
-function handleRegister() {
-  if (!registerForm.phone || !registerForm.code) {
+async function handleAdminLogin() {
+  if (!adminForm.username || !adminForm.password) {
     uni.showToast({ title: '请填写完整信息', icon: 'none' })
     return
   }
-  uni.showToast({ title: '该功能暂未开放', icon: 'none' })
+  try {
+    const result = await loginByAdmin(adminForm.username, adminForm.password)
+    onLoginSuccess(result.token, result.role, result.username, result.userId)
+  } catch { /* 错误已由拦截器处理 */ }
+}
+
+// ========== 登录成功统一处理 ==========
+
+function onLoginSuccess(token: string, role: string, username: string, userId: number) {
+  setToken(token)
+  setUserInfo({ userId, username, phone: '', role })
+
+  // 重连 WebSocket
+  reconnectWs(token)
+
+  uni.showToast({ title: '登录成功', icon: 'success' })
+
+  // 根据角色跳转不同首页
+  setTimeout(() => {
+    if (role === 'ADMIN_CANTEEN') {
+      uni.reLaunch({ url: '/pages/canteen/workbench/index' })
+    } else if (role === 'ADMIN_SYSTEM') {
+      uni.showToast({ title: '系统管理员请使用PC端管理后台', icon: 'none', duration: 3000 })
+      setToken('')
+    } else {
+      uni.reLaunch({ url: '/pages/index/index' })
+    }
+  }, 500)
+}
+
+function reconnectWs(token: string) {
+  uni.closeSocket({
+    success() { connectWs(token) },
+    fail() { connectWs(token) },
+  })
+}
+
+function connectWs(token: string) {
+  let wsUrl: string
+  // #ifdef H5
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  wsUrl = protocol + '//' + location.host + '/ws?token=' + token
+  // #endif
+  // #ifndef H5
+  wsUrl = 'ws://localhost:8000/ws?token=' + token
+  // #endif
+  uni.connectSocket({ url: wsUrl })
+}
+
+// ========== 已登录自动跳转 ==========
+
+onMounted(() => {
+  if (getToken()) {
+    const info = getUserInfoFromStorage()
+    if (info?.role === 'ADMIN_CANTEEN') {
+      uni.reLaunch({ url: '/pages/canteen/workbench/index' })
+    } else {
+      uni.reLaunch({ url: '/pages/index/index' })
+    }
+  }
+})
+
+function getUserInfoFromStorage() {
+  try {
+    const raw = uni.getStorageSync('canteen-user')
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
 }
 </script>
 
@@ -212,7 +228,7 @@ function handleRegister() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 60rpx;
+  margin-bottom: 40rpx;
 }
 
 .logo {
@@ -227,7 +243,8 @@ function handleRegister() {
   color: #333;
 }
 
-.tab-bar {
+/* 角色切换 */
+.role-tabs {
   display: flex;
   background: #fff;
   border-radius: 16rpx;
@@ -235,7 +252,7 @@ function handleRegister() {
   margin-bottom: 40rpx;
 }
 
-.tab-item {
+.role-tab {
   flex: 1;
   text-align: center;
   padding: 24rpx 0;
@@ -244,12 +261,13 @@ function handleRegister() {
   transition: all 0.3s;
 }
 
-.tab-item.active {
+.role-tab.active {
   background: #FF6B35;
   color: #fff;
   font-weight: bold;
 }
 
+/* 表单 */
 .form-box {
   background: #fff;
   border-radius: 16rpx;

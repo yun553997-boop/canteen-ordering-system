@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.canteen.common.R;
 import com.canteen.entity.SysUser;
+import com.canteen.enums.UserRole;
 import com.canteen.service.SysUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,6 +68,11 @@ public class AuthController {
 
         if (user.getStatus() == null || user.getStatus() == 0) {
             return R.fail("账号已被禁用");
+        }
+
+        // 管理员登录仅限 ADMIN_CANTEEN / ADMIN_SYSTEM 角色
+        if (!UserRole.ADMIN_CANTEEN.equals(user.getRole()) && !UserRole.ADMIN_SYSTEM.equals(user.getRole())) {
+            return R.fail("非管理员账号，请使用手机验证码登录");
         }
 
         StpUtil.login(user.getId());
@@ -185,6 +191,11 @@ public class AuthController {
 
         if (user.getStatus() == null || user.getStatus() == 0) {
             return R.fail("账号已被禁用");
+        }
+
+        // 手机验证码登录仅限普通用户角色
+        if (!UserRole.USER_STAFF.equals(user.getRole()) && !UserRole.USER_PATIENT.equals(user.getRole())) {
+            return R.fail("管理员请使用账号密码登录");
         }
 
         StpUtil.login(user.getId());

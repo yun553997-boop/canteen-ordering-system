@@ -7,7 +7,13 @@
 
 import { getToken, removeToken } from './storage'
 
+// #ifdef H5
 const BASE_URL = '/api/v1'
+// #endif
+// #ifndef H5
+const BASE_URL = 'http://localhost:8000/api/v1'
+// #endif
+
 
 interface RequestConfig {
   url: string
@@ -88,4 +94,8 @@ export function post<T>(url: string, data?: Record<string, unknown>): Promise<T>
 
 export function put<T>(url: string, data?: Record<string, unknown>): Promise<T> {
   return request<T>({ url, method: 'PUT', data })
+}
+
+export function del<T>(url: string): Promise<T> {
+  return request<T>({ url, method: 'DELETE' })
 }
