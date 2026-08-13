@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -96,6 +97,9 @@ public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
         String randomPart = String.format("%06d", RANDOM.nextInt(1000000));
         String orderNo = datePart + randomPart;
 
+        // 3.5 生成取餐码（4位随机数，当天不重复）
+        String verifyCode = generateVerifyCode();
+
         // 4. 逐条扣减库存
         for (OrderItemRequest item : request.getItems()) {
             BizDish dish = bizDishService.getById(item.getDishId());
@@ -112,6 +116,7 @@ public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
         order.setTotalAmount(totalAmount);
         order.setMealType(request.getMealType());
         order.setStatus(OrderStatus.PENDING);
+        order.setVerifyCode(verifyCode);
         save(order);
 
         // 6. 批量插入订单明细
@@ -120,8 +125,27 @@ public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
         }
         bizOrderItemService.saveBatch(orderItems);
 
-        log.info("[Order] 订单创建成功: orderNo={}, userId={}, mealType={}, total={}, items={}",
-                orderNo, userId, request.getMealType(), totalAmount, orderItems.size());
+        log.info("[Order] 订单创建成功: orderNo={}, userId={}, mealType={}, total={}, verifyCode={}, items={}",
+                orderNo, userId, request.getMealType(), totalAmount, verifyCode, orderItems.size());
         return orderNo;
+    }
+
+    /**
+     * 生成 4 位取餐码（0000-9999），保证当天不重复
+     */
+    private String generateVerifyCode() {
+        String code;
+        do {
+            code = String.format("%04d", RANDOM.nextInt(10000));
+        } while (isVerifyCodeUsedToday(code));
+        return code;
+    }
+
+    private boolean isVerifyCodeUsedToday(String code) {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        long count = count(new LambdaQueryWrapper<BizOrder>()
+                .eq(BizOrder::getVerifyCode, code)
+                .ge(BizOrder::getCreateTime, startOfDay));
+        return count > 0;
     }
 }

@@ -17,7 +17,7 @@ export const getStatisticsOverview = (params: Record<string, any> = {}) => {
   return http.get<OverviewData>(`/v1/admin/statistics/overview`, params);
 };
 
-/** 导出订单报表 */
-export const exportOrderExcel = (period: string) => {
-  return http.download(`/v1/admin/statistics/export`, { period });
+/** 导出订单报表（后端 export 为 GET，返回 xlsx 二进制流） */
+export const exportOrderExcel = (params: { startTime?: string; endTime?: string } = {}) => {
+  return http.get(`/v1/admin/statistics/export`, params, { responseType: "blob" }) as unknown as Promise<Blob>;
 };
