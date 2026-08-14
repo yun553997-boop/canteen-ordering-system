@@ -1,6 +1,7 @@
 package com.canteen.runner;
 
 import cn.dev33.satoken.secure.SaSecureUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.canteen.entity.SysConfig;
 import com.canteen.entity.SysUser;
 import com.canteen.service.SysConfigService;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 
 @Component
 public class DataInitRunner implements ApplicationRunner {
@@ -76,23 +78,33 @@ public class DataInitRunner implements ApplicationRunner {
     }
 
     private void initSystemConfig() {
-        long count = sysConfigService.count();
-        if (count == 0) {
-            SysConfig deadlineConfig = new SysConfig();
-            deadlineConfig.setConfigKey("DEADLINE_LUNCH");
-            deadlineConfig.setConfigValue("10:30");
-            deadlineConfig.setDescription("午餐订餐截止时间");
-            sysConfigService.save(deadlineConfig);
+        // 清理已废弃的 DEADLINE_LUNCH 键（改为 MEAL_LUNCH_START/END）
+        sysConfigService.remove(new LambdaQueryWrapper<SysConfig>()
+                .eq(SysConfig::getConfigKey, "DEADLINE_LUNCH"));
 
-            SysConfig timeoutConfig = new SysConfig();
-            timeoutConfig.setConfigKey("TIMEOUT_MINUTES");
-            timeoutConfig.setConfigValue("120");
-            timeoutConfig.setDescription("取餐超时作废时间(分钟)");
-            sysConfigService.save(timeoutConfig);
+        // key, 默认值, 描述
+        String[][] defaults = {
+            {"TIMEOUT_MINUTES", "60", "取餐超时作废时间(分钟)"},
+            {"MEAL_BREAKFAST_START", "06:00", "早餐可订餐开始时间"},
+            {"MEAL_BREAKFAST_END", "09:30", "早餐可订餐截止时间"},
+            {"MEAL_LUNCH_START", "10:30", "午餐可订餐开始时间"},
+            {"MEAL_LUNCH_END", "13:30", "午餐可订餐截止时间"},
+            {"MEAL_DINNER_START", "16:30", "晚餐可订餐开始时间"},
+            {"MEAL_DINNER_END", "19:00", "晚餐可订餐截止时间"},
+        };
 
-            System.out.println("====== [DataInit] 系统基础配置初始化完成！ ======");
-        } else {
-            System.out.println("====== [DataInit] 检测到配置表非空，跳过配置初始化。 ======");
+        int created = 0;
+        for (String[] item : defaults) {
+            if (sysConfigService.getValue(item[0]) == null) {
+                SysConfig config = new SysConfig();
+                config.setConfigKey(item[0]);
+                config.setConfigValue(item[1]);
+                config.setDescription(item[2]);
+                config.setUpdateTime(LocalDateTime.now());
+                sysConfigService.save(config);
+                created++;
+            }
         }
+        System.out.println("====== [DataInit] 系统基础配置初始化完成，新增 " + created + " 项 ======");
     }
 }

@@ -7,7 +7,6 @@ import com.canteen.dto.OrderItemRequest;
 import com.canteen.entity.BizDish;
 import com.canteen.entity.BizOrder;
 import com.canteen.entity.BizOrderItem;
-import com.canteen.entity.SysConfig;
 import com.canteen.enums.OrderStatus;
 import com.canteen.mapper.BizOrderMapper;
 import com.canteen.service.BizDishService;
@@ -47,23 +46,26 @@ public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String createOrder(Long userId, CreateOrderRequest request) {
-        // 1. 校验订餐截止时间
-        String configKey = "DEADLINE_" + request.getMealType();
-        SysConfig deadlineConfig = sysConfigService.getOne(
-                new LambdaQueryWrapper<SysConfig>()
-                        .eq(SysConfig::getConfigKey, configKey)
-        );
-        if (deadlineConfig != null && deadlineConfig.getConfigValue() != null) {
+        // 1. 校验订餐时间段（MEAL_{餐次}_START / MEAL_{餐次}_END）
+        String mealType = request.getMealType();
+        String startStr = sysConfigService.getValue("MEAL_" + mealType + "_START");
+        String endStr = sysConfigService.getValue("MEAL_" + mealType + "_END");
+        if (startStr != null && !startStr.isEmpty() && endStr != null && !endStr.isEmpty()) {
             try {
-                LocalTime deadline = LocalTime.parse(deadlineConfig.getConfigValue());
-                if (LocalTime.now().isAfter(deadline)) {
-                    throw new RuntimeException("已超过 " + request.getMealType() + " 订餐截止时间 "
-                            + deadlineConfig.getConfigValue());
+                LocalTime start = LocalTime.parse(startStr);
+                LocalTime end = LocalTime.parse(endStr);
+                LocalTime now = LocalTime.now();
+                String mealLabel = mealTypeLabel(mealType);
+                if (now.isBefore(start)) {
+                    throw new RuntimeException("尚未到" + mealLabel + "订餐时间（" + startStr + " 开始）");
+                }
+                if (now.isAfter(end)) {
+                    throw new RuntimeException("已超过" + mealLabel + "订餐截止时间 " + endStr);
                 }
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {
-                log.warn("[Order] 截止时间解析失败: {}", deadlineConfig.getConfigValue());
+                log.warn("[Order] 订餐时间段解析失败: start={}, end={}", startStr, endStr);
             }
         }
 
@@ -128,6 +130,18 @@ public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
         log.info("[Order] 订单创建成功: orderNo={}, userId={}, mealType={}, total={}, verifyCode={}, items={}",
                 orderNo, userId, request.getMealType(), totalAmount, verifyCode, orderItems.size());
         return orderNo;
+    }
+
+    /**
+     * 餐次中文名映射
+     */
+    private String mealTypeLabel(String mealType) {
+        switch (mealType) {
+            case "BREAKFAST": return "早餐";
+            case "LUNCH": return "午餐";
+            case "DINNER": return "晚餐";
+            default: return mealType;
+        }
     }
 
     /**

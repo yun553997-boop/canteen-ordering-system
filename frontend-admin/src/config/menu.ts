@@ -74,11 +74,11 @@ export const STATIC_MENU_LIST: Menu.MenuOptions[] = [
         }
       },
       {
-        path: "/system/log",
-        name: "systemLog",
+        path: "/system/config",
+        name: "systemConfig",
         meta: {
-          icon: "Document",
-          title: "操作日志",
+          icon: "Setting",
+          title: "系统配置",
           isLink: "",
           isHide: false,
           isFull: false,
@@ -87,5 +87,18 @@ export const STATIC_MENU_LIST: Menu.MenuOptions[] = [
         }
       }
     ]
+  },
+  {
+    path: "/systemLog",
+    name: "systemLog",
+    meta: {
+      icon: "Document",
+      title: "操作日志",
+      isLink: "",
+      isHide: false,
+      isFull: false,
+      isAffix: false,
+      isKeepAlive: true
+    }
   }
 ];

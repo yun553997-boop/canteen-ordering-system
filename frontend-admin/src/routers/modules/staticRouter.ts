@@ -76,16 +76,26 @@ export const staticRouter: RouteRecordRaw[] = [
             }
           },
           {
-            path: "/system/log",
-            name: "systemLog",
-            component: () => import("@/views/system/systemLog/index.vue"),
+            path: "/system/config",
+            name: "systemConfig",
+            component: () => import("@/views/system/systemConfig/index.vue"),
             meta: {
-              icon: "Document",
-              title: "操作日志",
+              icon: "Setting",
+              title: "系统配置",
               isKeepAlive: true
             }
           }
         ]
+      },
+      {
+        path: "/systemLog",
+        name: "systemLog",
+        component: () => import("@/views/system/systemLog/index.vue"),
+        meta: {
+          icon: "Document",
+          title: "操作日志",
+          isKeepAlive: true
+        }
       }
     ]
   }
