@@ -121,6 +121,10 @@ public class OrderController {
         BizOrder update = new BizOrder();
         update.setId(order.getId());
         update.setStatus(status);
+        // 备餐完成（READY）时记录时间，作为超时作废的基准
+        if (OrderStatus.READY.equals(status)) {
+            update.setUpdateTime(LocalDateTime.now());
+        }
         bizOrderService.updateById(update);
 
         // 推送状态变更通知给下单用户

@@ -85,3 +85,10 @@ export interface OrderSummary {
 export function getOrderList(): Promise<OrderSummary[]> {
   return get<OrderSummary[]>('/user/orders/list')
 }
+
+/**
+ * 取消订单（仅 PENDING 待处理状态可取消）
+ */
+export function cancelOrder(orderNo: string): Promise<void> {
+  return post<void>(`/user/orders/cancel/${orderNo}`)
+}

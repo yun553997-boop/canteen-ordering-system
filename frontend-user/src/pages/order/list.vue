@@ -25,7 +25,7 @@
         </view>
         <view class="order-meta">
           <text class="meta-label">金额</text>
-          <text class="meta-value price">¥{{ (item.totalAmount * 1).toFixed(2) }}</text>
+          <text class="meta-value price">¥{{ (item.totalAmount / 100).toFixed(2) }}</text>
         </view>
         <view class="order-meta">
           <text class="meta-label">时间</text>
@@ -64,6 +64,7 @@ const statusLabel = (val: string) => {
     READY: '待取餐',
     COMPLETED: '已完成',
     CANCELLED: '已取消',
+    EXPIRED: '已作废',
   }
   return map[val] || val
 }

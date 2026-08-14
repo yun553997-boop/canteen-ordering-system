@@ -49,6 +49,10 @@ uni.onSocketMessage((res: any) => {
       }
     } else if (msg.type === 'NEW_ORDER') {
       uni.showToast({ title: msg.message || '有新订单', icon: 'none', duration: 3000 })
+    } else if (msg.type === 'ORDER_EXPIRED') {
+      uni.showToast({ title: msg.message || '订单已超时作废', icon: 'none', duration: 3000 })
+    } else if (msg.type === 'ORDER_REMIND') {
+      uni.showToast({ title: msg.message || '请尽快前来取餐', icon: 'none', duration: 4000 })
     }
   } catch { /* ignore */ }
 })

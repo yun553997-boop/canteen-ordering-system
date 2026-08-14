@@ -7,11 +7,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.canteen.annotation.LogRecord;
 import com.canteen.common.R;
 import com.canteen.dto.CreateOrderRequest;
+import com.canteen.entity.BizDish;
 import com.canteen.entity.BizOrder;
 import com.canteen.entity.BizOrderItem;
 import com.canteen.entity.SysUser;
 import com.canteen.enums.NotificationType;
+import com.canteen.enums.OrderStatus;
 import com.canteen.enums.UserRole;
+import com.canteen.service.BizDishService;
 import com.canteen.service.BizOrderItemService;
 import com.canteen.service.BizOrderService;
 import com.canteen.service.SysNotificationService;
@@ -34,6 +37,7 @@ public class UserOrderController {
 
     private final BizOrderService bizOrderService;
     private final BizOrderItemService bizOrderItemService;
+    private final BizDishService bizDishService;
     private final SysNotificationService sysNotificationService;
     private final SysUserService sysUserService;
 
@@ -132,5 +136,75 @@ public class UserOrderController {
         result.put("order", order);
         result.put("items", items);
         return R.ok(result);
+    }
+
+    /**
+     * 用户取消订单：仅 PENDING（待处理）状态可无责取消
+     * 取消后恢复库存，通知食堂管理员
+     */
+    @LogRecord(module = "用户订单", action = "取消订单")
+    @PostMapping("/cancel/{orderNo}")
+    public R<Void> cancel(@PathVariable String orderNo) {
+        Long userId = StpUtil.getLoginIdAsLong();
+
+        BizOrder order = bizOrderService.getOne(
+                new LambdaQueryWrapper<BizOrder>()
+                        .eq(BizOrder::getOrderNo, orderNo)
+        );
+        if (order == null) {
+            return R.fail("订单不存在");
+        }
+        if (!order.getUserId().equals(userId)) {
+            return R.fail("无权操作该订单");
+        }
+        // 仅 PENDING（待处理）状态可取消
+        if (!OrderStatus.PENDING.equals(order.getStatus())) {
+            return R.fail("当前状态不可取消，仅待处理状态可取消");
+        }
+
+        // 更新订单状态为 CANCELLED
+        BizOrder update = new BizOrder();
+        update.setId(order.getId());
+        update.setStatus(OrderStatus.CANCELLED);
+        bizOrderService.updateById(update);
+
+        // 恢复库存
+        List<BizOrderItem> items = bizOrderItemService.list(
+                new LambdaQueryWrapper<BizOrderItem>()
+                        .eq(BizOrderItem::getOrderId, order.getId())
+        );
+        for (BizOrderItem item : items) {
+            BizDish dish = bizDishService.getById(item.getDishId());
+            if (dish != null && dish.getStock() != null) {
+                BizDish dishUpdate = new BizDish();
+                dishUpdate.setId(dish.getId());
+                dishUpdate.setStock(dish.getStock() + item.getQuantity());
+                bizDishService.updateById(dishUpdate);
+            }
+        }
+
+        // 通知食堂管理员（WebSocket + 持久化）
+        Map<String, Object> wsMsg = new HashMap<>();
+        wsMsg.put("type", "ORDER_CANCELLED");
+        wsMsg.put("message", "订单 " + orderNo + " 已被用户取消");
+        wsMsg.put("orderNo", orderNo);
+        WebSocketServer.sendToRole(UserRole.ADMIN_CANTEEN, wsMsg);
+
+        List<SysUser> canteenAdmins = sysUserService.list(
+                new LambdaQueryWrapper<SysUser>()
+                        .eq(SysUser::getRole, UserRole.ADMIN_CANTEEN)
+                        .eq(SysUser::getStatus, 1)
+        );
+        for (SysUser admin : canteenAdmins) {
+            sysNotificationService.create(
+                    admin.getId(),
+                    NotificationType.SYSTEM_ALERT,
+                    "订单取消",
+                    "订单号 " + orderNo + " 已被用户取消"
+            );
+        }
+
+        log.info("[Order] 用户取消订单: orderNo={}, userId={}", orderNo, userId);
+        return R.ok();
     }
 }

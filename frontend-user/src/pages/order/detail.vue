@@ -78,6 +78,11 @@
         <text class="info-value">{{ mealTypeLabel }}</text>
       </view>
     </view>
+
+    <!-- 取消订单按钮 -->
+    <view v-if="order.status === 'PENDING'" class="cancel-section">
+      <button class="cancel-btn" @tap="handleCancel">取消订单</button>
+    </view>
   </view>
 </template>
 
@@ -89,8 +94,9 @@ const statusLabels: Record<string, string> = {
   PREPARING: '制作中',
   READY: '待取餐',
   COMPLETED: '已完成',
+  EXPIRED: '已作废',
 }
-import { getOrderDetail } from '@/api/user'
+import { getOrderDetail, cancelOrder } from '@/api/user'
 import type { OrderDetail } from '@/api/user'
 
 interface OrderItemDisplay {
@@ -139,6 +145,7 @@ const statusText = computed(() => {
     READY: '制作完成',
     COMPLETED: '已取餐',
     CANCELLED: '已取消',
+    EXPIRED: '已作废',
   }
   return map[order.status] || order.status || '加载中...'
 })
@@ -149,12 +156,13 @@ const statusDesc = computed(() => {
     PREPARING: '厨师正在为您精心制作',
     READY: '请前往取餐窗口取餐',
     COMPLETED: '感谢您的光临',
+    EXPIRED: '订单已超时未取餐，已作废',
   }
   return map[order.status] || ''
 })
 
 const pickupCode = computed(() => {
-  if (order.status !== 'READY' && order.status !== 'COMPLETED') return ''
+  if (order.status !== 'READY') return ''
   return rawVerifyCode || rawOrderNo.slice(-4)
 })
 
@@ -190,12 +198,12 @@ async function fetchDetail() {
     order.status = bizOrder.status
     order.createTime = bizOrder.createTime
     order.items = data.items || []
-    totalAmount.value = ((bizOrder.totalAmount || 0) * 1).toFixed(2)
+    totalAmount.value = ((bizOrder.totalAmount || 0) / 100).toFixed(2)
     mealTypeLabel.value = mealLabelMap[bizOrder.mealType] || bizOrder.mealType || ''
     rawVerifyCode = bizOrder.verifyCode || ''
     updateSteps(bizOrder.status)
-    // READY / COMPLETED 状态展示订单号二维码（后端生成 PNG）
-    if ((bizOrder.status === 'READY' || bizOrder.status === 'COMPLETED') && bizOrder.orderNo) {
+    // 仅 READY（待取餐）状态展示订单号二维码（后端生成 PNG）
+    if (bizOrder.status === 'READY' && bizOrder.orderNo) {
       const text = encodeURIComponent(bizOrder.orderNo)
       // #ifdef H5
       qrImageUrl.value = '/api/v1/common/qrcode?text=' + text
@@ -203,10 +211,30 @@ async function fetchDetail() {
       // #ifndef H5
       qrImageUrl.value = 'http://192.168.126.220:8000/api/v1/common/qrcode?text=' + text
       // #endif
+    } else {
+      qrImageUrl.value = ''
     }
   } catch {
     // 错误已由 request.ts 拦截器处理
   }
+}
+
+function handleCancel() {
+  uni.showModal({
+    title: '取消订单',
+    content: '确定要取消该订单吗？取消后不可恢复',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await cancelOrder(rawOrderNo)
+          uni.showToast({ title: '订单已取消', icon: 'success' })
+          fetchDetail()
+        } catch {
+          // 错误已由拦截器处理
+        }
+      }
+    },
+  })
 }
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -289,6 +317,22 @@ onUnload(() => {
 .status-desc {
   font-size: 26rpx;
   opacity: 0.85;
+}
+
+.cancel-section {
+  margin: 20rpx;
+  padding-bottom: 40rpx;
+}
+
+.cancel-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+  color: #F56C6C;
+  background: #fff;
+  border: 2rpx solid #F56C6C;
+  border-radius: 44rpx;
 }
 
 /* 进度条 */
