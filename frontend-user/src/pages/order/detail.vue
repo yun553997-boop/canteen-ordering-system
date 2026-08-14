@@ -30,9 +30,10 @@
       </view>
     </view>
 
-    <!-- 取餐码（仅 READY 或 COMPLETED 状态显示） -->
+    <!-- 取餐二维码（仅 READY 或 COMPLETED 状态显示） -->
     <view class="pickup-card" v-if="pickupCode">
       <text class="pickup-label">取餐码</text>
+      <image v-if="qrImageUrl" class="pickup-qr" :src="qrImageUrl" mode="aspectFit" />
       <text class="pickup-code">{{ pickupCode }}</text>
       <text class="pickup-tip">请在取餐窗口出示此码</text>
     </view>
@@ -157,6 +158,9 @@ const pickupCode = computed(() => {
   return rawVerifyCode || rawOrderNo.slice(-4)
 })
 
+// 二维码图片 URL（后端生成）
+const qrImageUrl = ref('')
+
 let rawVerifyCode = ''
 let rawOrderNo = ''
 
@@ -190,6 +194,16 @@ async function fetchDetail() {
     mealTypeLabel.value = mealLabelMap[bizOrder.mealType] || bizOrder.mealType || ''
     rawVerifyCode = bizOrder.verifyCode || ''
     updateSteps(bizOrder.status)
+    // READY / COMPLETED 状态展示订单号二维码（后端生成 PNG）
+    if ((bizOrder.status === 'READY' || bizOrder.status === 'COMPLETED') && bizOrder.orderNo) {
+      const text = encodeURIComponent(bizOrder.orderNo)
+      // #ifdef H5
+      qrImageUrl.value = '/api/v1/common/qrcode?text=' + text
+      // #endif
+      // #ifndef H5
+      qrImageUrl.value = 'http://192.168.126.220:8000/api/v1/common/qrcode?text=' + text
+      // #endif
+    }
   } catch {
     // 错误已由 request.ts 拦截器处理
   }
@@ -209,12 +223,16 @@ onLoad((options) => {
     pollTimer = setInterval(async () => {
       await fetchDetail()
       if (order.status !== previousStatus) {
-        const label = statusLabels[order.status] || order.status
-        uni.showToast({
-          title: `订单状态已更新：${label}`,
-          icon: 'none',
-          duration: 3000,
-        })
+        if (order.status === 'COMPLETED') {
+          uni.showToast({ title: '就餐愉快', icon: 'success', duration: 3000 })
+        } else {
+          const label = statusLabels[order.status] || order.status
+          uni.showToast({
+            title: `订单状态已更新：${label}`,
+            icon: 'none',
+            duration: 3000,
+          })
+        }
         previousStatus = order.status
       }
     }, 8000)
@@ -365,13 +383,27 @@ onUnload(() => {
   margin-bottom: 12rpx;
 }
 
+.pickup-qr {
+  width: 320rpx;
+  height: 320rpx;
+  margin: 10rpx auto;
+  display: block;
+}
+
+.pickup-qr-canvas {
+  width: 220px;
+  height: 220px;
+  margin: 10rpx auto;
+  display: block;
+}
+
 .pickup-code {
   display: block;
-  font-size: 72rpx;
+  font-size: 32rpx;
   font-weight: bold;
   color: #FF6B35;
-  letter-spacing: 12rpx;
-  margin-bottom: 8rpx;
+  letter-spacing: 4rpx;
+  margin-top: 8rpx;
 }
 
 .pickup-tip {

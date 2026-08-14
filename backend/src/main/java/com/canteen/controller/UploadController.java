@@ -2,13 +2,22 @@ package com.canteen.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.canteen.common.R;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -22,6 +31,29 @@ public class UploadController {
 
     @Value("${canteen.upload-path}")
     private String uploadPath;
+
+    /**
+     * 生成二维码图片（用于取餐码展示）
+     * 返回 PNG 图片流，跨端直接 <image> 展示
+     * 公开访问：<image> 标签无法携带 token header，且二维码内容仅为订单号，不敏感
+     */
+    @GetMapping("/qrcode")
+    public void qrcode(@RequestParam String text, HttpServletResponse response) {
+        try {
+            if (text == null || text.isEmpty()) {
+                response.setStatus(400);
+                return;
+            }
+            int size = 300;
+            BitMatrix matrix = new MultiFormatWriter().encode(text, BarcodeFormat.QR_CODE, size, size);
+            BufferedImage image = MatrixToImageWriter.toBufferedImage(matrix);
+            response.setContentType("image/png");
+            ImageIO.write(image, "png", response.getOutputStream());
+        } catch (Exception e) {
+            log.error("[QRCode] 生成失败", e);
+            response.setStatus(500);
+        }
+    }
 
     @SaCheckLogin
     @PostMapping("/upload")

@@ -33,7 +33,7 @@ public class OrderController {
     private final BizOrderService bizOrderService;
 
     /**
-     * 核销订单：校验订单存在且状态为 PENDING 或 READY，修改为 COMPLETED
+     * 核销订单（幂等）：仅允许 READY 状态，防重复核销
      */
     @LogRecord(module = "订单管理", action = "核销订单")
     @PostMapping("/verify")
@@ -52,9 +52,14 @@ public class OrderController {
             return R.fail("订单不存在");
         }
 
-        if (!OrderStatus.PENDING.equals(order.getStatus())
-                && !OrderStatus.READY.equals(order.getStatus())) {
-            return R.fail("当前订单状态不允许核销，仅 PENDING 或 READY 状态可核销");
+        // 状态防重：已核销的订单不允许重复操作
+        if (OrderStatus.COMPLETED.equals(order.getStatus())) {
+            return R.fail("该订单已核销，请勿重复操作");
+        }
+
+        // 状态强校验：仅允许 READY（待取餐）状态核销
+        if (!OrderStatus.READY.equals(order.getStatus())) {
+            return R.fail("当前订单状态不允许核销，仅 READY（待取餐）状态可核销");
         }
 
         BizOrder update = new BizOrder();
@@ -65,7 +70,7 @@ public class OrderController {
         // 推送状态变更通知给下单用户
         Map<String, Object> wsMsg = new HashMap<>();
         wsMsg.put("type", "ORDER_STATUS_CHANGE");
-        wsMsg.put("message", "您的订单已核销完成！");
+        wsMsg.put("message", "就餐愉快");
         wsMsg.put("orderNo", orderNo);
         wsMsg.put("status", OrderStatus.COMPLETED);
         WebSocketServer.sendToUser(order.getUserId(), wsMsg);

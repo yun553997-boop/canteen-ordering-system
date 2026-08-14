@@ -191,7 +191,7 @@ function connectWs(token: string) {
   wsUrl = protocol + '//' + location.host + '/ws?token=' + token
   // #endif
   // #ifndef H5
-  wsUrl = 'ws://localhost:8000/ws?token=' + token
+  wsUrl = 'ws://192.168.126.220:8000/ws?token=' + token
   // #endif
   uni.connectSocket({ url: wsUrl })
 }

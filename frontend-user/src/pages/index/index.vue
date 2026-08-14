@@ -22,7 +22,7 @@
       <view v-for="dish in dishes" :key="dish.id" class="dish-card">
         <image
           class="dish-img"
-          :src="dish.imageUrl || defaultImg"
+          :src="resolveImageUrl(dish.imageUrl) || defaultImg"
           mode="aspectFill"
         />
         <view class="dish-info">
@@ -30,7 +30,7 @@
           <text class="dish-desc">{{ dish.description }}</text>
           <view class="dish-meta">
             <text class="dish-price">
-              <text class="price-symbol">¥</text>{{ dish.price.toFixed(2) }}
+              <text class="price-symbol">¥</text>{{ (dish.price / 100).toFixed(2) }}
             </text>
             <text class="dish-stock">剩余: {{ dish.stock }}</text>
           </view>
@@ -70,7 +70,7 @@
           <text class="cart-icon">🛒</text>
           <text class="cart-badge">{{ cartTotalCount }}</text>
         </view>
-        <text class="cart-total">¥{{ cartTotalPrice.toFixed(2) }}</text>
+        <text class="cart-total">¥{{ (cartTotalPrice / 100).toFixed(2) }}</text>
       </view>
       <button class="checkout-btn" @tap="submitOrder">提交订单</button>
     </view>
@@ -84,6 +84,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { getUserDishes, submitOrder as submitOrderApi } from '@/api/user'
 import type { DishItem } from '@/api/user'
 import { getToken } from '@/utils/storage'
+import { resolveImageUrl } from '@/utils/url'
 import CustomTabBar from '@/components/CustomTabBar.vue'
 
 interface CartEntry {

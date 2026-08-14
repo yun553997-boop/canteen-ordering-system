@@ -18,7 +18,7 @@
       <view v-for="dish in dishes" :key="dish.id" class="dish-card">
         <image
           class="dish-img"
-          :src="dish.imageUrl || '/static/logo.png'"
+          :src="resolveImageUrl(dish.imageUrl) || '/static/logo.png'"
           mode="aspectFill"
         />
         <view class="dish-info">
@@ -82,7 +82,7 @@
           <view class="form-item">
             <text class="form-label">图片</text>
             <button class="upload-btn" size="mini" @tap="chooseImage">选择图片</button>
-            <image v-if="form.imageUrl" :src="form.imageUrl" class="preview-img" mode="aspectFill" />
+            <image v-if="form.imageUrl" :src="resolveImageUrl(form.imageUrl)" class="preview-img" mode="aspectFill" />
           </view>
         </scroll-view>
         <!-- 分类下拉选择器 -->
@@ -121,6 +121,7 @@ import {
 } from '@/api/admin'
 import type { DishInfo } from '@/api/admin'
 import { getUserInfo, getToken } from '@/utils/storage'
+import { resolveImageUrl } from '@/utils/url'
 import CustomTabBar from '@/components/CustomTabBar.vue'
 
 // 分类中英文映射（DB 存英文码，UI 显示中文）
@@ -266,7 +267,7 @@ function chooseImage() {
       const uploadUrl = '/api/v1/common/upload'
       // #endif
       // #ifndef H5
-      const uploadUrl = 'http://localhost:8000/api/v1/common/upload'
+      const uploadUrl = 'http://192.168.126.220:8000/api/v1/common/upload'
       // #endif
       uni.uploadFile({
         url: uploadUrl,

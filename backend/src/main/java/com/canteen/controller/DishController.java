@@ -55,8 +55,12 @@ public class DishController {
     @LogRecord(module = "菜品管理", action = "新增菜品")
     @PostMapping("/add")
     public R<Void> add(@RequestBody BizDish dish) {
+        // 新菜品：stock 未传时，用 dailyLimit 初始化（每日限量即当天备餐库存）
+        if (dish.getStock() == null) {
+            dish.setStock(dish.getDailyLimit() == null ? 0 : dish.getDailyLimit());
+        }
         bizDishService.save(dish);
-        log.info("[Dish] 新增菜品: {}", dish.getName());
+        log.info("[Dish] 新增菜品: {}, stock={}, dailyLimit={}", dish.getName(), dish.getStock(), dish.getDailyLimit());
         return R.ok();
     }
 

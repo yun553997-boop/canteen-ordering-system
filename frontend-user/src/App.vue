@@ -6,7 +6,7 @@ import { getToken, removeToken } from "@/utils/storage";
 const BASE_URL = '/api/v1'
 // #endif
 // #ifndef H5
-const BASE_URL = 'http://localhost:8000/api/v1'
+const BASE_URL = 'http://192.168.126.220:8000/api/v1'
 // #endif
 
 function getWsUrl(token: string): string {
@@ -15,7 +15,7 @@ function getWsUrl(token: string): string {
   return protocol + '//' + location.host + '/ws?token=' + token
   // #endif
   // #ifndef H5
-  return 'ws://localhost:8000/ws?token=' + token
+  return 'ws://192.168.126.220:8000/ws?token=' + token
   // #endif
 }
 
@@ -42,7 +42,11 @@ uni.onSocketMessage((res: any) => {
   try {
     const msg = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
     if (msg.type === 'ORDER_STATUS_CHANGE') {
-      uni.showToast({ title: msg.message || '订单状态已更新', icon: 'none', duration: 3000 })
+      if (msg.status === 'COMPLETED') {
+        uni.showToast({ title: '就餐愉快', icon: 'success', duration: 3000 })
+      } else {
+        uni.showToast({ title: msg.message || '订单状态已更新', icon: 'none', duration: 3000 })
+      }
     } else if (msg.type === 'NEW_ORDER') {
       uni.showToast({ title: msg.message || '有新订单', icon: 'none', duration: 3000 })
     }

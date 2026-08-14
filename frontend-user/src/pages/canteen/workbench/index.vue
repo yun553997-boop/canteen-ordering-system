@@ -16,6 +16,26 @@
       </view>
     </view>
 
+    <!-- 功能入口图标行 -->
+    <view class="func-row">
+      <view class="func-item" @tap="scanVerify">
+        <text class="func-icon">📷</text>
+        <text class="func-label">扫码核销</text>
+      </view>
+      <view class="func-item" @tap="openManualVerify">
+        <text class="func-icon">⌨️</text>
+        <text class="func-label">输码核销</text>
+      </view>
+      <view class="func-item" @tap="placeholder('核销明细')">
+        <text class="func-icon">📋</text>
+        <text class="func-label">核销明细</text>
+      </view>
+      <view class="func-item" @tap="placeholder('售卖明细')">
+        <text class="func-icon">📊</text>
+        <text class="func-label">售卖明细</text>
+      </view>
+    </view>
+
     <!-- 订单状态 Tab -->
     <view class="order-tabs">
       <view
@@ -34,9 +54,12 @@
       <view v-for="order in orders" :key="order.orderNo" class="order-card">
         <view class="order-header">
           <text class="order-no">#{{ order.orderNo.slice(-8) }}</text>
-          <text class="order-status" :style="{ color: statusColor(order.status) }">
-            {{ statusLabel(order.status) }}
-          </text>
+          <view class="order-header-right">
+            <text class="order-status" :style="{ color: statusColor(order.status) }">
+              {{ statusLabel(order.status) }}
+            </text>
+            <text class="expand-icon" @tap="goOrderDetail(order)">⤢</text>
+          </view>
         </view>
         <view class="order-body">
           <text class="order-meal">{{ mealLabel(order.mealType) }}</text>
@@ -59,26 +82,18 @@
           >
             备餐完成
           </button>
-          <button
-            v-if="order.status === 'READY'"
-            class="action-btn warning"
-            size="mini"
-            @tap="scanVerify"
-          >
-            扫码核销
-          </button>
-          <text v-if="order.status === 'PENDING' || order.status === 'READY'" class="verify-hint">
-            {{ order.verifyCode }}
+          <text v-if="order.status === 'READY'" class="verify-hint">
+            待核销 · {{ order.verifyCode }}
           </text>
         </view>
       </view>
       <view v-if="orders.length === 0" class="empty-tip">暂无订单</view>
     </scroll-view>
 
-    <!-- 扫码核销弹窗 -->
+    <!-- 输码核销弹窗 -->
     <view v-if="showManualVerify" class="modal-mask" @tap="showManualVerify = false">
       <view class="modal-box" @tap.stop>
-        <text class="modal-title">手动核销</text>
+        <text class="modal-title">输码核销</text>
         <input
           v-model="manualOrderNo"
           class="modal-input"
@@ -107,12 +122,11 @@ const stats = reactive({ totalOrders: 0, pendingPickup: 0, completed: 0 })
 
 // 订单
 const orderTabs = [
-  { label: '全部', value: '' },
   { label: '待处理', value: 'PENDING' },
   { label: '备餐中', value: 'PREPARING' },
   { label: '待取餐', value: 'READY' },
 ]
-const statusFilter = ref('')
+const statusFilter = ref('PENDING')
 const orders = ref<OrderInfo[]>([])
 const page = ref(1)
 const pageSize = 10
@@ -199,22 +213,19 @@ async function finishPrepare(order: OrderInfo) {
 }
 
 function scanVerify() {
-  // #ifdef H5
+  uni.navigateTo({ url: '/pages/canteen/scan/index' })
+}
+
+function openManualVerify() {
   showManualVerify.value = true
-  // #endif
-  // #ifndef H5
-  uni.scanCode({
-    scanType: ['barCode', 'qrCode'],
-    success: async (res: any) => {
-      const orderNo = res.result?.trim()
-      if (!orderNo) {
-        uni.showToast({ title: '未识别到订单号', icon: 'none' })
-        return
-      }
-      await doVerify(orderNo)
-    },
-  })
-  // #endif
+}
+
+function goOrderDetail(order: OrderInfo) {
+  placeholder('订单详情')
+}
+
+function placeholder(name: string) {
+  uni.showToast({ title: `${name}（开发中）`, icon: 'none' })
 }
 
 async function doManualVerify() {
@@ -251,6 +262,14 @@ async function doVerify(orderNo: string) {
 .stat-card.pending .stat-num { color: #E6A23C; }
 .stat-card.done .stat-num { color: #67C23A; }
 
+.func-row {
+  display: flex; margin: 20rpx; padding: 24rpx 8rpx;
+  background: #fff; border-radius: 12rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+}
+.func-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
+.func-icon { font-size: 44rpx; }
+.func-label { font-size: 24rpx; color: #666; }
+
 .order-tabs { display: flex; padding: 0 20rpx; gap: 12rpx; margin-bottom: 16rpx; }
 .order-tab {
   padding: 12rpx 24rpx; font-size: 26rpx; color: #666;
@@ -265,7 +284,9 @@ async function doVerify(orderNo: string) {
 }
 .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .order-no { font-size: 26rpx; color: #999; }
+.order-header-right { display: flex; align-items: center; gap: 12rpx; }
 .order-status { font-size: 26rpx; font-weight: bold; }
+.expand-icon { font-size: 36rpx; color: #999; padding: 0 4rpx; }
 .order-body { display: flex; justify-content: space-between; margin-bottom: 16rpx; }
 .order-meal { font-size: 28rpx; color: #333; }
 .order-amount { font-size: 32rpx; font-weight: bold; color: #FF6B35; }

@@ -54,6 +54,12 @@
       "style": {
         "navigationBarTitleText": "菜品管理"
       }
+    },
+    {
+      "path": "pages/canteen/scan/index",
+      "style": {
+        "navigationBarTitleText": "扫码核销"
+      }
     }
   ],
   "globalStyle": {

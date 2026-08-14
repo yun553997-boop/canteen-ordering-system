@@ -11,7 +11,7 @@ import { getToken, removeToken } from './storage'
 const BASE_URL = '/api/v1'
 // #endif
 // #ifndef H5
-const BASE_URL = 'http://localhost:8000/api/v1'
+const BASE_URL = 'http://192.168.126.220:8000/api/v1'
 // #endif
 
 
