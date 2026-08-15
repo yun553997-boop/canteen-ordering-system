@@ -75,6 +75,23 @@
       <button class="checkout-btn" @tap="submitOrder">提交订单</button>
     </view>
 
+    <!-- 支付确认面板 -->
+    <view v-if="showPayPanel" class="pay-mask" @tap="showPayPanel = false">
+      <view class="pay-sheet" @tap.stop>
+        <text class="pay-title">确认支付</text>
+        <view class="pay-row">
+          <text class="pay-label">支付金额</text>
+          <text class="pay-amount">¥{{ (cartTotalPrice / 100).toFixed(2) }}</text>
+        </view>
+        <view class="pay-row">
+          <text class="pay-label">当前钱包余额</text>
+          <text class="pay-balance">¥{{ (walletBalance / 100).toFixed(2) }}</text>
+        </view>
+        <button v-if="walletBalance >= cartTotalPrice" class="pay-btn confirm" @tap="confirmPay">确认支付</button>
+        <button v-else class="pay-btn insufficient" @tap="goRecharge">余额不足，去充值</button>
+      </view>
+    </view>
+
     <CustomTabBar />
   </view>
 </template>
@@ -83,6 +100,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { getUserDishes, submitOrder as submitOrderApi } from '@/api/user'
 import type { DishItem } from '@/api/user'
+import { getWalletBalance } from '@/api/wallet'
 import { getToken } from '@/utils/storage'
 import { resolveImageUrl } from '@/utils/url'
 import CustomTabBar from '@/components/CustomTabBar.vue'
@@ -106,6 +124,8 @@ const bottomOffset = ref(50) // tabBar 高度，px
 
 const cartTotalCount = computed(() => cart.reduce((s, i) => s + i.quantity, 0))
 const cartTotalPrice = computed(() => cart.reduce((s, i) => s + i.dish.price * i.quantity, 0))
+const showPayPanel = ref(false)
+const walletBalance = ref(0)
 
 function getQuantity(dishId: number): number {
   return cart.find((c) => c.dish.id === dishId)?.quantity || 0
@@ -167,6 +187,17 @@ async function submitOrder() {
     return
   }
 
+  // 拉取钱包余额后弹出确认面板
+  try {
+    const data = await getWalletBalance()
+    walletBalance.value = data.balance ?? 0
+  } catch {
+    walletBalance.value = 0
+  }
+  showPayPanel.value = true
+}
+
+async function confirmPay() {
   const payload = {
     mealType: currentMeal.value,
     items: cart.map((c) => ({
@@ -177,11 +208,18 @@ async function submitOrder() {
 
   try {
     await submitOrderApi(payload)
+    showPayPanel.value = false
     uni.showToast({ title: '订餐成功', icon: 'success' })
     clearCart()
   } catch {
-    // 错误已由 request.ts 拦截器处理
+    // 错误已由 request.ts 拦截器处理（如余额不足）
+    showPayPanel.value = false
   }
+}
+
+function goRecharge() {
+  showPayPanel.value = false
+  uni.navigateTo({ url: '/pages/wallet/index' })
 }
 
 onMounted(() => {
@@ -405,5 +443,75 @@ onMounted(() => {
   border: none;
   border-radius: 36rpx;
   padding: 16rpx 40rpx;
+}
+
+/* 支付确认面板 */
+.pay-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.pay-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 40rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.pay-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  display: block;
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+
+.pay-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 8rpx;
+  border-bottom: 2rpx solid #f5f5f5;
+}
+
+.pay-label {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.pay-amount {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #FF6B35;
+}
+
+.pay-balance {
+  font-size: 30rpx;
+  color: #333;
+}
+
+.pay-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  margin-top: 32rpx;
+  font-size: 30rpx;
+  border: none;
+  border-radius: 12rpx;
+}
+
+.pay-btn.confirm {
+  background: #67C23A;
+  color: #fff;
+}
+
+.pay-btn.insufficient {
+  background: #ccc;
+  color: #fff;
 }
 </style>

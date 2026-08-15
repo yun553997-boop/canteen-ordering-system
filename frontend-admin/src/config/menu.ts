@@ -100,5 +100,18 @@ export const STATIC_MENU_LIST: Menu.MenuOptions[] = [
       isAffix: false,
       isKeepAlive: true
     }
+  },
+  {
+    path: "/merchantWallet",
+    name: "merchantWallet",
+    meta: {
+      icon: "Wallet",
+      title: "商家钱包",
+      isLink: "",
+      isHide: false,
+      isFull: false,
+      isAffix: false,
+      isKeepAlive: true
+    }
   }
 ];

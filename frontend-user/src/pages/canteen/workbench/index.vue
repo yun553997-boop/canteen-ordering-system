@@ -63,7 +63,7 @@
         </view>
         <view class="order-body">
           <text class="order-meal">{{ mealLabel(order.mealType) }}</text>
-          <text class="order-amount">¥{{ (order.totalAmount || 0).toFixed(2) }}</text>
+          <text class="order-amount">¥{{ ((order.totalAmount || 0) / 100).toFixed(2) }}</text>
         </view>
         <view class="order-actions">
           <button

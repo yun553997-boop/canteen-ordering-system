@@ -88,8 +88,8 @@ export function get<T>(url: string, params?: Record<string, unknown>): Promise<T
   return request<T>({ url: fullUrl, method: 'GET' })
 }
 
-export function post<T>(url: string, data?: Record<string, unknown>): Promise<T> {
-  return request<T>({ url, method: 'POST', data })
+export function post<T>(url: string, data?: Record<string, unknown>, options?: { showLoading?: boolean }): Promise<T> {
+  return request<T>({ url, method: 'POST', data, showLoading: options?.showLoading })
 }
 
 export function put<T>(url: string, data?: Record<string, unknown>): Promise<T> {

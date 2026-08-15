@@ -17,8 +17,8 @@ export interface CurrentUser {
 /**
  * 发送短信验证码
  */
-export function sendSms(phone: string): Promise<void> {
-  return post<void>('/auth/send-sms', { phone })
+export function sendSms(phone: string): Promise<string> {
+  return post<string>('/auth/send-sms', { phone })
 }
 
 /**

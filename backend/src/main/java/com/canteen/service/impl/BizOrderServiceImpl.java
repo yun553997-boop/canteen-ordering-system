@@ -12,7 +12,9 @@ import com.canteen.mapper.BizOrderMapper;
 import com.canteen.service.BizDishService;
 import com.canteen.service.BizOrderItemService;
 import com.canteen.service.BizOrderService;
+import com.canteen.service.MerchantWalletService;
 import com.canteen.service.SysConfigService;
+import com.canteen.service.WalletService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,12 @@ public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
 
     @Autowired
     private BizOrderItemService bizOrderItemService;
+
+    @Autowired
+    private WalletService walletService;
+
+    @Autowired
+    private MerchantWalletService merchantWalletService;
 
     private static final Random RANDOM = new Random();
 
@@ -102,6 +110,11 @@ public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
         // 3.5 生成取餐码（4位随机数，当天不重复）
         String verifyCode = generateVerifyCode();
 
+        // 3.6 扣用户余额（余额不足抛异常，整个事务回滚）
+        walletService.consume(userId, totalAmount, orderNo);
+        // 3.7 商家入账
+        merchantWalletService.creditIncome(totalAmount, orderNo);
+
         // 4. 逐条扣减库存
         for (OrderItemRequest item : request.getItems()) {
             BizDish dish = bizDishService.getById(item.getDishId());
@@ -161,5 +174,49 @@ public class BizOrderServiceImpl extends ServiceImpl<BizOrderMapper, BizOrder>
                 .eq(BizOrder::getVerifyCode, code)
                 .ge(BizOrder::getCreateTime, startOfDay));
         return count > 0;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public BizOrder cancelOrder(Long userId, String orderNo) {
+        BizOrder order = getOne(new LambdaQueryWrapper<BizOrder>()
+                .eq(BizOrder::getOrderNo, orderNo));
+        if (order == null) {
+            throw new RuntimeException("订单不存在");
+        }
+        if (!order.getUserId().equals(userId)) {
+            throw new RuntimeException("无权操作该订单");
+        }
+        if (!OrderStatus.PENDING.equals(order.getStatus())) {
+            throw new RuntimeException("当前状态不可取消，仅待处理状态可取消");
+        }
+
+        // 更新订单状态为 CANCELLED
+        BizOrder update = new BizOrder();
+        update.setId(order.getId());
+        update.setStatus(OrderStatus.CANCELLED);
+        updateById(update);
+
+        // 恢复库存
+        List<BizOrderItem> items = bizOrderItemService.list(
+                new LambdaQueryWrapper<BizOrderItem>()
+                        .eq(BizOrderItem::getOrderId, order.getId())
+        );
+        for (BizOrderItem item : items) {
+            BizDish dish = bizDishService.getById(item.getDishId());
+            if (dish != null && dish.getStock() != null) {
+                BizDish dishUpdate = new BizDish();
+                dishUpdate.setId(dish.getId());
+                dishUpdate.setStock(dish.getStock() + item.getQuantity());
+                bizDishService.updateById(dishUpdate);
+            }
+        }
+
+        // 退款给用户 + 反向商家收入
+        walletService.refund(userId, order.getTotalAmount(), orderNo);
+        merchantWalletService.reverseIncome(order.getTotalAmount(), orderNo);
+
+        log.info("[Order] 取消订单成功: orderNo={}, userId={}", orderNo, userId);
+        return order;
     }
 }

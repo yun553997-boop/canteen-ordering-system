@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -26,6 +27,9 @@ public class SysUser {
     private Integer isInitialPassword;
 
     private Integer status;
+
+    /** 钱包余额（单位：分） */
+    private BigDecimal balance;
 
     private LocalDateTime createTime;
 

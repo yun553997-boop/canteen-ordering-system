@@ -22,3 +22,5 @@ export { getUserDishes, submitOrder, getOrderDetail, getOrderList as getUserOrde
 export type { DishItem, OrderDetail, OrderSummary } from './user'
 
 export { getNotifications, getUnreadCount, markRead, markAllRead } from './notification'
+
+export { getWalletBalance, rechargeWallet } from './wallet'

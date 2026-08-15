@@ -27,18 +27,24 @@
       </view>
     </view>
 
-    <!-- 中间待开发区 -->
-    <view class="placeholder-area">
-      <view class="placeholder-card">
-        <text class="placeholder-icon">🏗️</text>
-        <text class="placeholder-text">会员信息 / 更多功能</text>
-        <text class="placeholder-sub">敬请期待</text>
+    <!-- 功能入口 -->
+    <view class="func-area">
+      <view class="func-card">
+        <view class="func-item" @tap="goWallet">
+          <text class="func-icon">💰</text>
+          <text class="func-label">钱包</text>
+        </view>
+        <view class="func-item" @tap="placeholder('活动中心')">
+          <text class="func-icon">🎉</text>
+          <text class="func-label">活动中心</text>
+        </view>
       </view>
     </view>
 
-    <!-- 退出登录 -->
+    <!-- 退出登录 / 登录 -->
     <view class="logout-area">
-      <button class="logout-btn" @tap="handleLogout">退出登录</button>
+      <button v-if="isLoggedIn" class="logout-btn" @tap="handleLogout">退出登录</button>
+      <button v-else class="logout-btn login-btn" @tap="goLogin">登录</button>
     </view>
 
     <CustomTabBar />
@@ -57,6 +63,7 @@ const username = ref('未登录')
 const phone = ref('')
 const role = ref('')
 const unreadCount = ref(0)
+const isLoggedIn = ref(false)
 
 const avatarLetter = computed(() => {
   return username.value ? username.value.charAt(0).toUpperCase() : 'U'
@@ -113,6 +120,18 @@ function goNotifications() {
   uni.navigateTo({ url: '/pages/notification/list' })
 }
 
+function goWallet() {
+  uni.navigateTo({ url: '/pages/wallet/index' })
+}
+
+function goLogin() {
+  uni.reLaunch({ url: '/pages/login/login' })
+}
+
+function placeholder(name: string) {
+  uni.showToast({ title: `${name}（开发中）`, icon: 'none' })
+}
+
 function handleLogout() {
   uni.showModal({
     title: '提示',
@@ -130,6 +149,7 @@ function handleLogout() {
 }
 
 onShow(() => {
+  isLoggedIn.value = !!getToken()
   loadUserInfo()
   loadUnread()
 })
@@ -243,33 +263,34 @@ onShow(() => {
   font-weight: bold;
 }
 
-/* 中间待开发区 */
-.placeholder-area {
-  padding: 40rpx 30rpx;
+/* 功能入口 */
+.func-area {
+  padding: 40rpx 30rpx 0;
 }
 
-.placeholder-card {
+.func-card {
+  display: flex;
   background: #fff;
   border-radius: 16rpx;
-  padding: 80rpx 30rpx;
+  padding: 32rpx 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.func-item {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
-.placeholder-icon {
-  font-size: 60rpx;
+.func-icon {
+  font-size: 52rpx;
 }
 
-.placeholder-text {
-  font-size: 28rpx;
-  color: #999;
-}
-
-.placeholder-sub {
-  font-size: 24rpx;
-  color: #ccc;
+.func-label {
+  font-size: 26rpx;
+  color: #666;
 }
 
 /* 退出登录 */
@@ -286,5 +307,11 @@ onShow(() => {
   font-size: 30rpx;
   border: 2rpx solid #FF3B30;
   border-radius: 12rpx;
+}
+
+.login-btn {
+  background: #FF6B35;
+  color: #fff;
+  border-color: #FF6B35;
 }
 </style>

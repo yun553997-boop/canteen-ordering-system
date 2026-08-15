@@ -20,6 +20,12 @@
       }
     },
     {
+      "path": "pages/wallet/index",
+      "style": {
+        "navigationBarTitleText": "钱包"
+      }
+    },
+    {
       "path": "pages/notification/list",
       "style": {
         "navigationBarTitleText": "消息通知"

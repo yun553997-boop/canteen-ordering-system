@@ -1,9 +1,11 @@
 package com.canteen.config;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.canteen.annotation.LogRecord;
 import com.canteen.entity.SysOperationLog;
+import com.canteen.entity.SysUser;
 import com.canteen.service.SysOperationLogService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.canteen.service.SysUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -24,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 public class LogInterceptor implements HandlerInterceptor {
 
     private final SysOperationLogService sysOperationLogService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final SysUserService sysUserService;
 
     private static final String START_TIME = "LOG_START_TIME";
     private static final String OPERATOR_ID = "LOG_OPERATOR_ID";
@@ -38,7 +37,10 @@ public class LogInterceptor implements HandlerInterceptor {
             try {
                 String token = request.getHeader("canteen-token");
                 if (token != null && !token.isEmpty()) {
-                    operatorId = parseLoginIdFromJwt(token);
+                    Object loginId = StpUtil.getLoginIdByToken(token);
+                    if (loginId != null) {
+                        operatorId = Long.parseLong(loginId.toString());
+                    }
                 }
             } catch (Exception e) {
                 log.warn("[LogInterceptor] 解析 token 失败: {}", e.getMessage());
@@ -65,7 +67,7 @@ public class LogInterceptor implements HandlerInterceptor {
         long costTime = System.currentTimeMillis() - startTime;
 
         Long operatorId = (Long) request.getAttribute(OPERATOR_ID);
-        String operatorName = operatorId != null ? "用户" + operatorId : "未登录";
+        String operatorName = resolveOperatorName(operatorId);
 
         String action = buildAction(logRecord.action(), request.getRequestURI());
 
@@ -91,27 +93,21 @@ public class LogInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * 手动解析 Sa-Token JWT，提取 loginId
-     * JWT 格式：header.payload.signature
-     * payload 中 Sa-Token 存储 loginId 字段
+     * 解析操作人名：优先取真实用户名，查不到回退「用户{id}」，未登录则「未登录」
      */
-    private Long parseLoginIdFromJwt(String token) {
+    private String resolveOperatorName(Long operatorId) {
+        if (operatorId == null) {
+            return "未登录";
+        }
         try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) return null;
-
-            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = objectMapper.readValue(payload, Map.class);
-
-            Object loginId = map.get("loginId");
-            if (loginId != null) {
-                return Long.parseLong(loginId.toString());
+            SysUser user = sysUserService.getById(operatorId);
+            if (user != null && user.getUsername() != null && !user.getUsername().isEmpty()) {
+                return user.getUsername();
             }
         } catch (Exception e) {
-            log.debug("[LogInterceptor] JWT 解析失败: {}", e.getMessage());
+            log.warn("[LogInterceptor] 查询操作人失败: operatorId={}, error={}", operatorId, e.getMessage());
         }
-        return null;
+        return "用户" + operatorId;
     }
 
     private String buildAction(String baseAction, String uri) {

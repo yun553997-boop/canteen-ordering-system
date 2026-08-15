@@ -96,6 +96,16 @@ export const staticRouter: RouteRecordRaw[] = [
           title: "操作日志",
           isKeepAlive: true
         }
+      },
+      {
+        path: "/merchantWallet",
+        name: "merchantWallet",
+        component: () => import("@/views/merchantWallet/index.vue"),
+        meta: {
+          icon: "Wallet",
+          title: "商家钱包",
+          isKeepAlive: true
+        }
       }
     ]
   }

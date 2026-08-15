@@ -128,7 +128,7 @@ public class AuthController {
      * 发送短信验证码
      */
     @PostMapping("/send-sms")
-    public R<Void> sendSms(@RequestBody Map<String, String> params) {
+    public R<String> sendSms(@RequestBody Map<String, String> params) {
         String phone = params.get("phone");
 
         if (phone == null || phone.isEmpty()) {
@@ -150,7 +150,7 @@ public class AuthController {
         log.info("[Mock SMS] 有效期: {} 分钟", SMS_CODE_TTL);
         log.info("========================================");
 
-        return R.ok();
+        return R.ok(code);
     }
 
     /**

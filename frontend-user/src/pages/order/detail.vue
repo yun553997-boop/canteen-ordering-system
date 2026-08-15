@@ -48,7 +48,7 @@
         </view>
         <view class="item-right">
           <text class="item-count">×{{ item.quantity }}</text>
-          <text class="item-price">¥{{ (item.price * item.quantity).toFixed(2) }}</text>
+          <text class="item-price">¥{{ (item.price * item.quantity / 100).toFixed(2) }}</text>
         </view>
       </view>
     </view>

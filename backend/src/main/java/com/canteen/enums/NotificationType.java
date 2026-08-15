@@ -8,4 +8,5 @@ public final class NotificationType {
     public static final String ORDER_READY = "ORDER_READY";
     public static final String ORDER_EXPIRED = "ORDER_EXPIRED";
     public static final String SYSTEM_ALERT = "SYSTEM_ALERT";
+    public static final String WALLET_REFUND = "WALLET_REFUND";
 }
