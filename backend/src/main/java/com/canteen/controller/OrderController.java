@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.canteen.annotation.LogRecord;
 import com.canteen.common.R;
 import com.canteen.entity.BizOrder;
+import com.canteen.entity.BizOrderItem;
 import com.canteen.enums.NotificationType;
 import com.canteen.enums.OrderStatus;
+import com.canteen.service.BizOrderItemService;
 import com.canteen.service.BizOrderService;
 import com.canteen.service.SysNotificationService;
 import com.canteen.ws.WebSocketServer;
@@ -20,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -31,6 +34,7 @@ public class OrderController {
 
     private final SysNotificationService sysNotificationService;
     private final BizOrderService bizOrderService;
+    private final BizOrderItemService bizOrderItemService;
 
     /**
      * 核销订单（幂等）：仅允许 READY 状态，防重复核销
@@ -39,17 +43,31 @@ public class OrderController {
     @PostMapping("/verify")
     public R<Void> verify(@RequestBody Map<String, String> params) {
         String orderNo = params.get("orderNo");
-        if (orderNo == null || orderNo.isEmpty()) {
-            return R.fail("订单号不能为空");
+        String verifyCode = params.get("verifyCode");
+
+        if ((orderNo == null || orderNo.isEmpty()) && (verifyCode == null || verifyCode.isEmpty())) {
+            return R.fail("订单号或取餐码不能为空");
         }
 
-        BizOrder order = bizOrderService.getOne(
-                new LambdaQueryWrapper<BizOrder>()
-                        .eq(BizOrder::getOrderNo, orderNo)
-        );
+        BizOrder order;
+        if (orderNo != null && !orderNo.isEmpty()) {
+            // 扫码核销：按订单号查询
+            order = bizOrderService.getOne(
+                    new LambdaQueryWrapper<BizOrder>()
+                            .eq(BizOrder::getOrderNo, orderNo)
+            );
+        } else {
+            // 输码核销：取餐码当天唯一，按当天范围查询
+            LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+            order = bizOrderService.getOne(
+                    new LambdaQueryWrapper<BizOrder>()
+                            .eq(BizOrder::getVerifyCode, verifyCode)
+                            .ge(BizOrder::getCreateTime, startOfDay)
+            );
+        }
 
         if (order == null) {
-            return R.fail("订单不存在");
+            return R.fail("订单不存在或取餐码错误");
         }
 
         // 状态防重：已核销的订单不允许重复操作
@@ -178,6 +196,30 @@ public class OrderController {
         wrapper.orderByDesc(BizOrder::getCreateTime);
 
         Page<BizOrder> result = bizOrderService.page(new Page<>(page, pageSize), wrapper);
+        return R.ok(result);
+    }
+
+    /**
+     * 获取订单详情（含菜品明细），供食堂端下拉展开查看
+     */
+    @GetMapping("/detail/{orderNo}")
+    public R<Map<String, Object>> detail(@PathVariable String orderNo) {
+        BizOrder order = bizOrderService.getOne(
+                new LambdaQueryWrapper<BizOrder>()
+                        .eq(BizOrder::getOrderNo, orderNo)
+        );
+        if (order == null) {
+            return R.fail("订单不存在");
+        }
+
+        List<BizOrderItem> items = bizOrderItemService.list(
+                new LambdaQueryWrapper<BizOrderItem>()
+                        .eq(BizOrderItem::getOrderId, order.getId())
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("order", order);
+        result.put("items", items);
         return R.ok(result);
     }
 }

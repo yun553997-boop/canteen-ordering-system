@@ -50,9 +50,33 @@ export function verifyOrder(orderNo: string): Promise<void> {
   return post<void>('/admin/orders/verify', { orderNo })
 }
 
+/** 取餐码核销 */
+export function verifyByCode(verifyCode: string): Promise<void> {
+  return post<void>('/admin/orders/verify', { verifyCode })
+}
+
 /** 更新订单状态 PENDING→PREPARING→READY */
 export function updateOrderStatus(orderNo: string, status: string): Promise<void> {
   return put<void>(`/admin/orders/status/${orderNo}/${status}`)
+}
+
+/** 订单菜品明细项 */
+export interface OrderItemDetail {
+  dishId: number
+  dishName: string
+  price: number
+  quantity: number
+}
+
+/** 管理员订单详情（含菜品明细） */
+export interface AdminOrderDetail {
+  order: OrderInfo
+  items: OrderItemDetail[]
+}
+
+/** 获取订单详情（含菜品明细），供食堂端下拉展开 */
+export function getAdminOrderDetail(orderNo: string): Promise<AdminOrderDetail> {
+  return get<AdminOrderDetail>(`/admin/orders/detail/${orderNo}`)
 }
 
 // ========== 菜品管理 ==========

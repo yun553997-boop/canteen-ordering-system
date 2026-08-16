@@ -62,22 +62,25 @@ public class UploadController {
             return R.fail("请选择文件");
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            return R.fail("只允许上传图片文件");
-        }
-
         String originalName = file.getOriginalFilename();
         String ext = "";
         if (originalName != null && originalName.contains(".")) {
-            ext = originalName.substring(originalName.lastIndexOf("."));
+            ext = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
         }
+        // 小程序上传时 Content-Type 常为 application/octet-stream，改用扩展名 + Content-Type 双重校验
+        String contentType = file.getContentType();
+        boolean extValid = ext.matches("\\.(jpg|jpeg|png|gif|webp|bmp)");
+        boolean contentTypeValid = contentType != null && contentType.startsWith("image/");
+        if (!extValid && !contentTypeValid) {
+            return R.fail("只允许上传图片文件");
+        }
+
         String filename = UUID.randomUUID().toString() + ext;
 
         try {
             File dir = new File(uploadPath, "dishes");
-            if (!dir.exists()) {
-                dir.mkdirs();
+            if (!dir.exists() && !dir.mkdirs()) {
+                return R.fail("创建上传目录失败: " + dir.getAbsolutePath());
             }
             File dest = new File(dir, filename);
             file.transferTo(dest);

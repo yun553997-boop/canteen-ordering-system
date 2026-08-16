@@ -93,11 +93,11 @@ public class LogInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * 解析操作人名：优先取真实用户名，查不到回退「用户{id}」，未登录则「未登录」
+     * 解析操作人名：优先取真实用户名，查不到回退「用户{id}」，未登录则「管理者」
      */
     private String resolveOperatorName(Long operatorId) {
         if (operatorId == null) {
-            return "未登录";
+            return "管理者";
         }
         try {
             SysUser user = sysUserService.getById(operatorId);

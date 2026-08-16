@@ -52,16 +52,16 @@
     <!-- 订单列表 -->
     <scroll-view class="order-list" scroll-y @scrolltolower="loadMore">
       <view v-for="order in orders" :key="order.orderNo" class="order-card">
-        <view class="order-header">
+        <view class="order-header" @tap="toggleExpand(order)">
           <text class="order-no">#{{ order.orderNo.slice(-8) }}</text>
           <view class="order-header-right">
             <text class="order-status" :style="{ color: statusColor(order.status) }">
               {{ statusLabel(order.status) }}
             </text>
-            <text class="expand-icon" @tap="goOrderDetail(order)">⤢</text>
+            <text class="expand-icon" @tap.stop="toggleExpand(order)">{{ expandedOrderNo === order.orderNo ? '⤡' : '⤢' }}</text>
           </view>
         </view>
-        <view class="order-body">
+        <view class="order-body" @tap="toggleExpand(order)">
           <text class="order-meal">{{ mealLabel(order.mealType) }}</text>
           <text class="order-amount">¥{{ ((order.totalAmount || 0) / 100).toFixed(2) }}</text>
         </view>
@@ -86,6 +86,21 @@
             待核销 · {{ order.verifyCode }}
           </text>
         </view>
+
+        <!-- 下拉展开：菜品明细 -->
+        <view v-if="expandedOrderNo === order.orderNo" class="order-items">
+          <text class="order-items-title">菜品明细</text>
+          <view
+            v-for="item in (orderItemsMap[order.orderNo] || [])"
+            :key="item.dishId"
+            class="order-item-row"
+          >
+            <text class="order-item-name">{{ item.dishName }}</text>
+            <text class="order-item-count">×{{ item.quantity }}</text>
+            <text class="order-item-price">¥{{ ((item.price * item.quantity) / 100).toFixed(2) }}</text>
+          </view>
+          <view v-if="!orderItemsMap[order.orderNo]" class="order-items-loading">加载中...</view>
+        </view>
       </view>
       <view v-if="orders.length === 0" class="empty-tip">暂无订单</view>
     </scroll-view>
@@ -95,9 +110,11 @@
       <view class="modal-box" @tap.stop>
         <text class="modal-title">输码核销</text>
         <input
-          v-model="manualOrderNo"
+          v-model="manualVerifyCode"
           class="modal-input"
-          placeholder="请输入订单号"
+          type="number"
+          maxlength="4"
+          placeholder="请输入取餐码"
         />
         <view class="modal-btns">
           <button class="modal-btn cancel" size="mini" @tap="showManualVerify = false">取消</button>
@@ -112,8 +129,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getStatisticsOverview, getOrderList, updateOrderStatus, verifyOrder } from '@/api/admin'
-import type { OrderInfo } from '@/api/admin'
+import { getStatisticsOverview, getOrderList, updateOrderStatus, verifyByCode, getAdminOrderDetail } from '@/api/admin'
+import type { OrderInfo, OrderItemDetail } from '@/api/admin'
 import { getUserInfo } from '@/utils/storage'
 import CustomTabBar from '@/components/CustomTabBar.vue'
 
@@ -132,9 +149,13 @@ const page = ref(1)
 const pageSize = 10
 const hasMore = ref(true)
 
+// 订单菜品明细展开
+const expandedOrderNo = ref('')
+const orderItemsMap = reactive<Record<string, OrderItemDetail[]>>({})
+
 // 核销
 const showManualVerify = ref(false)
-const manualOrderNo = ref('')
+const manualVerifyCode = ref('')
 
 // 状态映射
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -220,8 +241,20 @@ function openManualVerify() {
   showManualVerify.value = true
 }
 
-function goOrderDetail(order: OrderInfo) {
-  placeholder('订单详情')
+async function toggleExpand(order: OrderInfo) {
+  if (expandedOrderNo.value === order.orderNo) {
+    expandedOrderNo.value = ''
+    return
+  }
+  expandedOrderNo.value = order.orderNo
+  if (!orderItemsMap[order.orderNo]) {
+    try {
+      const data = await getAdminOrderDetail(order.orderNo)
+      orderItemsMap[order.orderNo] = data.items || []
+    } catch {
+      orderItemsMap[order.orderNo] = []
+    }
+  }
 }
 
 function placeholder(name: string) {
@@ -229,18 +262,18 @@ function placeholder(name: string) {
 }
 
 async function doManualVerify() {
-  if (!manualOrderNo.value.trim()) {
-    uni.showToast({ title: '请输入订单号', icon: 'none' })
+  if (!manualVerifyCode.value.trim()) {
+    uni.showToast({ title: '请输入取餐码', icon: 'none' })
     return
   }
-  await doVerify(manualOrderNo.value.trim())
+  await doVerify(manualVerifyCode.value.trim())
   showManualVerify.value = false
-  manualOrderNo.value = ''
+  manualVerifyCode.value = ''
 }
 
-async function doVerify(orderNo: string) {
+async function doVerify(verifyCode: string) {
   try {
-    await verifyOrder(orderNo)
+    await verifyByCode(verifyCode)
     uni.showToast({ title: '核销成功', icon: 'success' })
     page.value = 1
     fetchOrders()
@@ -297,6 +330,15 @@ async function doVerify(orderNo: string) {
 .action-btn.success { background: #67C23A; color: #fff; }
 .action-btn.warning { background: #E6A23C; color: #fff; }
 .verify-hint { font-size: 24rpx; color: #999; }
+
+/* 订单菜品明细展开 */
+.order-items { border-top: 1rpx solid #f5f5f5; margin-top: 16rpx; padding-top: 16rpx; }
+.order-items-title { font-size: 24rpx; color: #999; display: block; margin-bottom: 8rpx; }
+.order-item-row { display: flex; align-items: center; padding: 8rpx 0; }
+.order-item-name { flex: 1; font-size: 26rpx; color: #333; }
+.order-item-count { font-size: 24rpx; color: #999; margin-right: 16rpx; }
+.order-item-price { font-size: 26rpx; color: #FF6B35; }
+.order-items-loading { font-size: 24rpx; color: #ccc; text-align: center; padding: 12rpx 0; }
 
 .empty-tip { text-align: center; color: #999; padding: 100rpx 0; }
 
