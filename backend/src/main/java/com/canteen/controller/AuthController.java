@@ -211,6 +211,166 @@ public class AuthController {
     }
 
     /**
+     * 普通用户密码登录
+     */
+    @PostMapping("/login/user")
+    public R<Map<String, Object>> loginUser(@RequestBody Map<String, String> params) {
+        String phone = params.get("phone");
+        String password = params.get("password");
+
+        if (phone == null || phone.isEmpty()) {
+            return R.fail("手机号不能为空");
+        }
+        if (password == null || password.isEmpty()) {
+            return R.fail("密码不能为空");
+        }
+
+        SysUser user = sysUserService.getOne(
+                new LambdaQueryWrapper<SysUser>().eq(SysUser::getPhone, phone)
+        );
+        if (user == null) {
+            return R.fail("该手机号未注册");
+        }
+        if (!SaSecureUtil.md5(password).equals(user.getPassword())) {
+            return R.fail("密码错误");
+        }
+        if (user.getStatus() == null || user.getStatus() == 0) {
+            return R.fail("账号已被禁用");
+        }
+        if (!UserRole.USER_STAFF.equals(user.getRole()) && !UserRole.USER_PATIENT.equals(user.getRole())) {
+            return R.fail("请使用食堂管理员登录");
+        }
+
+        StpUtil.login(user.getId());
+        StpUtil.getSession().set("role", user.getRole());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("token", StpUtil.getTokenInfo().getTokenValue());
+        result.put("role", user.getRole());
+        result.put("username", user.getUsername());
+        result.put("userId", user.getId());
+
+        return R.ok(result);
+    }
+
+    /**
+     * 用户自助注册（默认角色 USER_PATIENT）
+     */
+    @PostMapping("/register")
+    public R<Map<String, Object>> register(@RequestBody Map<String, String> params) {
+        String nickname = params.get("nickname");
+        String phone = params.get("phone");
+        String code = params.get("code");
+        String password = params.get("password");
+
+        if (nickname == null || nickname.isEmpty()) {
+            return R.fail("昵称不能为空");
+        }
+        if (phone == null || phone.isEmpty()) {
+            return R.fail("手机号不能为空");
+        }
+        if (password == null || password.length() < 6) {
+            return R.fail("密码长度不能少于6位");
+        }
+
+        String smsError = checkSmsCode(phone, code);
+        if (smsError != null) {
+            return R.fail(smsError);
+        }
+
+        long usernameCount = sysUserService.count(
+                new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, nickname)
+        );
+        if (usernameCount > 0) {
+            return R.fail("昵称已存在: " + nickname);
+        }
+
+        long phoneCount = sysUserService.count(
+                new LambdaQueryWrapper<SysUser>().eq(SysUser::getPhone, phone)
+        );
+        if (phoneCount > 0) {
+            return R.fail("手机号已被注册: " + phone);
+        }
+
+        SysUser user = new SysUser();
+        user.setUsername(nickname);
+        user.setPhone(phone);
+        user.setPassword(SaSecureUtil.md5(password));
+        user.setRole(UserRole.USER_PATIENT);
+        user.setIsInitialPassword(0);
+        user.setStatus(1);
+        sysUserService.save(user);
+
+        // 注册成功自动登录
+        StpUtil.login(user.getId());
+        StpUtil.getSession().set("role", user.getRole());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("token", StpUtil.getTokenInfo().getTokenValue());
+        result.put("role", user.getRole());
+        result.put("username", user.getUsername());
+        result.put("userId", user.getId());
+
+        log.info("[Auth] 用户注册成功: phone={}, nickname={}", phone, nickname);
+        return R.ok(result);
+    }
+
+    /**
+     * 忘记密码：验证码重置
+     */
+    @PostMapping("/reset-password")
+    public R<Void> resetPassword(@RequestBody Map<String, String> params) {
+        String phone = params.get("phone");
+        String code = params.get("code");
+        String newPassword = params.get("newPassword");
+
+        if (phone == null || phone.isEmpty()) {
+            return R.fail("手机号不能为空");
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            return R.fail("新密码长度不能少于6位");
+        }
+
+        String smsError = checkSmsCode(phone, code);
+        if (smsError != null) {
+            return R.fail(smsError);
+        }
+
+        SysUser user = sysUserService.getOne(
+                new LambdaQueryWrapper<SysUser>().eq(SysUser::getPhone, phone)
+        );
+        if (user == null) {
+            return R.fail("该手机号未注册");
+        }
+
+        LambdaUpdateWrapper<SysUser> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(SysUser::getId, user.getId())
+                .set(SysUser::getPassword, SaSecureUtil.md5(newPassword))
+                .set(SysUser::getIsInitialPassword, 0);
+        sysUserService.update(updateWrapper);
+
+        log.info("[Auth] 用户重置密码成功: phone={}", phone);
+        return R.ok();
+    }
+
+    /** 校验短信验证码：成功返回 null，失败返回错误信息 */
+    private String checkSmsCode(String phone, String code) {
+        if (code == null || code.isEmpty()) {
+            return "验证码不能为空";
+        }
+        String key = SMS_CODE_PREFIX + phone;
+        String storedCode = stringRedisTemplate.opsForValue().get(key);
+        if (storedCode == null) {
+            return "验证码已过期，请重新发送";
+        }
+        if (!storedCode.equals(code)) {
+            return "验证码错误";
+        }
+        stringRedisTemplate.delete(key);
+        return null;
+    }
+
+    /**
      * 获取当前登录用户信息（用于 token 校验）
      */
     @SaCheckLogin

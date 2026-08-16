@@ -9,7 +9,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: canteen_db
-      TZ: Asia/Shanghaicanteen_db
+      TZ: Asia/Shanghai
     command:
       --default-authentication-plugin=mysql_native_password
       --character-set-server=utf8mb4
@@ -17,7 +17,7 @@ services:
    
     volumes:
       - ./docker/mysql/data:/var/lib/mysql
-      # - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   canteen-redis:
     image: redis:7.0-alpine

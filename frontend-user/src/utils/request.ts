@@ -54,7 +54,7 @@ function request<T>(config: RequestConfig): Promise<T> {
           resolve(result.data)
         } else if (result.code === 401 || result.code === 403) {
           removeToken()
-          uni.reLaunch({ url: '/pages/login/login' })
+          uni.reLaunch({ url: '/pages/login/index' })
           reject(new Error(result.message || '登录已过期'))
         } else {
           uni.showToast({ title: result.message || '请求失败', icon: 'none' })

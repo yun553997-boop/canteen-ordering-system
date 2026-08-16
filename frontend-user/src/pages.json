@@ -32,9 +32,15 @@
       }
     },
     {
-      "path": "pages/login/login",
+      "path": "pages/login/index",
       "style": {
         "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/login/canteen",
+      "style": {
+        "navigationBarTitleText": "食堂登录"
       }
     },
     {

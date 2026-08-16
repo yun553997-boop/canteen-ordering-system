@@ -125,7 +125,7 @@ function goWallet() {
 }
 
 function goLogin() {
-  uni.reLaunch({ url: '/pages/login/login' })
+  uni.reLaunch({ url: '/pages/login/index' })
 }
 
 function placeholder(name: string) {
@@ -142,7 +142,7 @@ function handleLogout() {
         removeUserInfo()
         unreadCount.value = 0
         username.value = '未登录'
-        uni.reLaunch({ url: '/pages/login/login' })
+        uni.reLaunch({ url: '/pages/login/index' })
       }
     },
   })

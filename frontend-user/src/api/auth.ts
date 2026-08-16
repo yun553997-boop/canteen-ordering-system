@@ -1,10 +1,11 @@
-import { get, post } from '@/utils/request'
+import { get, post, put } from '@/utils/request'
 
 export interface LoginResult {
   token: string
   role: string
   username: string
   userId: number
+  isInitialPassword?: number
 }
 
 export interface CurrentUser {
@@ -26,6 +27,34 @@ export function sendSms(phone: string): Promise<string> {
  */
 export function loginByMobile(phone: string, code: string): Promise<LoginResult> {
   return post<LoginResult>('/auth/login/mobile', { phone, code })
+}
+
+/**
+ * 普通用户密码登录
+ */
+export function loginByUser(phone: string, password: string): Promise<LoginResult> {
+  return post<LoginResult>('/auth/login/user', { phone, password })
+}
+
+/**
+ * 用户自助注册（自动登录）
+ */
+export function register(data: { nickname: string; phone: string; code: string; password: string }): Promise<LoginResult> {
+  return post<LoginResult>('/auth/register', data as unknown as Record<string, unknown>)
+}
+
+/**
+ * 忘记密码（验证码重置）
+ */
+export function resetPassword(phone: string, code: string, newPassword: string): Promise<void> {
+  return post<void>('/auth/reset-password', { phone, code, newPassword })
+}
+
+/**
+ * 修改密码（登录后）
+ */
+export function updatePassword(newPassword: string, oldPassword?: string): Promise<void> {
+  return put<void>('/auth/update-password', { newPassword, oldPassword })
 }
 
 /**

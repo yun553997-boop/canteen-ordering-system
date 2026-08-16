@@ -1,45 +1,91 @@
 <template>
   <view class="login-container">
+    <!-- 右上角角标：切换食堂登录 -->
+    <view class="corner-badge" @tap="goCanteen">食堂人员登录</view>
+
     <view class="login-header">
       <image class="logo" src="/static/logo.png" mode="aspectFit" />
       <text class="app-name">食堂订餐</text>
     </view>
 
-    <!-- 角色切换 Tab -->
+    <!-- 登录 / 注册 Tab -->
     <view class="role-tabs">
       <view
         class="role-tab"
-        :class="{ active: loginRole === 'user' }"
-        @tap="loginRole = 'user'"
+        :class="{ active: authMode === 'login' }"
+        @tap="authMode = 'login'"
       >
-        普通用户
+        登录
       </view>
       <view
         class="role-tab"
-        :class="{ active: loginRole === 'admin' }"
-        @tap="loginRole = 'admin'"
+        :class="{ active: authMode === 'register' }"
+        @tap="authMode = 'register'"
       >
-        食堂管理员
+        注册
       </view>
     </view>
 
-    <!-- 普通用户：手机号 + 验证码登录 -->
-    <view v-if="loginRole === 'user'" class="form-box">
+    <!-- 登录表单 -->
+    <view v-if="authMode === 'login'" class="form-box">
       <view class="input-group">
         <text class="input-label">手机号</text>
+        <view class="phone-row">
+          <text class="phone-prefix">+86</text>
+          <input
+            v-model="loginForm.phone"
+            class="input-field"
+            type="number"
+            placeholder="请输入手机号"
+            maxlength="11"
+          />
+        </view>
+      </view>
+      <view class="input-group">
+        <text class="input-label">密码</text>
         <input
-          v-model="smsForm.phone"
+          v-model="loginForm.password"
           class="input-field"
-          type="number"
-          placeholder="请输入手机号"
-          maxlength="11"
+          type="text"
+          password
+          placeholder="请输入密码"
         />
+      </view>
+      <view class="forgot-row">
+        <text class="forgot-link" @tap="openForgot">忘记密码？</text>
+      </view>
+      <button class="submit-btn" @tap="handleLogin">登 录</button>
+    </view>
+
+    <!-- 注册表单 -->
+    <view v-else class="form-box">
+      <view class="input-group">
+        <text class="input-label">昵称</text>
+        <input
+          v-model="regForm.nickname"
+          class="input-field"
+          type="text"
+          placeholder="请输入昵称"
+        />
+      </view>
+      <view class="input-group">
+        <text class="input-label">手机号</text>
+        <view class="phone-row">
+          <text class="phone-prefix">+86</text>
+          <input
+            v-model="regForm.phone"
+            class="input-field"
+            type="number"
+            placeholder="请输入手机号"
+            maxlength="11"
+          />
+        </view>
       </view>
       <view class="input-group">
         <text class="input-label">验证码</text>
         <view class="code-row">
           <input
-            v-model="smsForm.code"
+            v-model="regForm.code"
             class="input-field code-input"
             type="number"
             placeholder="请输入验证码"
@@ -49,37 +95,33 @@
             class="code-btn"
             :disabled="codeCountdown > 0"
             size="mini"
-            @tap="sendCode"
+            @tap="sendRegisterCode"
           >
             {{ codeCountdown > 0 ? codeCountdown + 's' : '获取验证码' }}
           </button>
         </view>
       </view>
-      <button class="submit-btn" @tap="handleSmsLogin">登 录</button>
-    </view>
-
-    <!-- 食堂管理员：用户名/手机号 + 密码登录 -->
-    <view v-else class="form-box">
-      <view class="input-group">
-        <text class="input-label">用户名 / 手机号</text>
-        <input
-          v-model="adminForm.username"
-          class="input-field"
-          type="text"
-          placeholder="请输入用户名或手机号"
-        />
-      </view>
       <view class="input-group">
         <text class="input-label">密码</text>
         <input
-          v-model="adminForm.password"
+          v-model="regForm.password"
           class="input-field"
           type="text"
-          placeholder="请输入密码"
           password
+          placeholder="请输入密码（至少6位）"
         />
       </view>
-      <button class="submit-btn" @tap="handleAdminLogin">登 录</button>
+      <view class="input-group">
+        <text class="input-label">确认密码</text>
+        <input
+          v-model="regForm.confirmPassword"
+          class="input-field"
+          type="text"
+          password
+          placeholder="请再次输入密码"
+        />
+      </view>
+      <button class="submit-btn" @tap="handleRegister">注 册</button>
     </view>
 
     <!-- 协议勾选 -->
@@ -108,19 +150,66 @@
         <button class="modal-close" @tap="showAgreementModal = false">我知道了</button>
       </view>
     </view>
+
+    <!-- 忘记密码弹窗 -->
+    <view v-if="showForgot" class="modal-mask" @tap="showForgot = false">
+      <view class="modal-box" @tap.stop>
+        <text class="modal-title">忘记密码</text>
+        <view class="forgot-field">
+          <input
+            v-model="forgotForm.phone"
+            class="input-field"
+            type="number"
+            placeholder="请输入手机号"
+            maxlength="11"
+          />
+        </view>
+        <view class="forgot-field code-row">
+          <input
+            v-model="forgotForm.code"
+            class="input-field code-input"
+            type="number"
+            placeholder="请输入验证码"
+            maxlength="6"
+          />
+          <button
+            class="code-btn"
+            :disabled="codeCountdown > 0"
+            size="mini"
+            @tap="sendForgotCode"
+          >
+            {{ codeCountdown > 0 ? codeCountdown + 's' : '获取验证码' }}
+          </button>
+        </view>
+        <view class="forgot-field">
+          <input
+            v-model="forgotForm.newPassword"
+            class="input-field"
+            type="text"
+            password
+            placeholder="请输入新密码（至少6位）"
+          />
+        </view>
+        <button class="submit-btn" @tap="handleResetPassword">确认重置</button>
+        <button class="modal-cancel" @tap="showForgot = false">取消</button>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { sendSms, loginByMobile, loginByAdmin } from '@/api/auth'
+import { sendSms, loginByUser, register, resetPassword } from '@/api/auth'
 import { getToken, setToken, setUserInfo } from '@/utils/storage'
 
-const loginRole = ref<'user' | 'admin'>('user')
+const authMode = ref<'login' | 'register'>('login')
 const codeCountdown = ref(0)
+let countdownTimer: ReturnType<typeof setInterval> | null = null
 
-const smsForm = reactive({ phone: '', code: '' })
-const adminForm = reactive({ username: '', password: '' })
+const loginForm = reactive({ phone: '', password: '' })
+const regForm = reactive({ nickname: '', phone: '', code: '', password: '', confirmPassword: '' })
+const forgotForm = reactive({ phone: '', code: '', newPassword: '' })
+const showForgot = ref(false)
 
 const agreeNotice = ref(false)
 const agreeProtocol = ref(false)
@@ -141,64 +230,121 @@ const PROTOCOL_CONTENT =
   '<p>2. 请妥善保管账号，因账号保管不善造成的损失由用户自行承担。</p>' +
   '<p>3. 平台保留对本协议的解释与更新权利。</p>'
 
-let countdownTimer: ReturnType<typeof setInterval> | null = null
+function startCountdown() {
+  codeCountdown.value = 60
+  if (countdownTimer) clearInterval(countdownTimer)
+  countdownTimer = setInterval(() => {
+    codeCountdown.value--
+    if (codeCountdown.value <= 0 && countdownTimer) {
+      clearInterval(countdownTimer)
+      countdownTimer = null
+    }
+  }, 1000)
+}
 
-// ========== 发送验证码 ==========
-
-async function sendCode() {
-  const phone = smsForm.phone
+async function sendRegisterCode() {
+  const phone = regForm.phone
   if (!phone || phone.length !== 11) {
     uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
     return
   }
   try {
     const code = await sendSms(phone)
-    smsForm.code = code
+    regForm.code = code
     uni.showToast({ title: `【演示环境】您的验证码是：${code}`, icon: 'none', duration: 4000 })
-    codeCountdown.value = 60
-    countdownTimer = setInterval(() => {
-      codeCountdown.value--
-      if (codeCountdown.value <= 0 && countdownTimer) {
-        clearInterval(countdownTimer)
-        countdownTimer = null
-      }
-    }, 1000)
+    startCountdown()
   } catch { /* 错误已由拦截器处理 */ }
 }
 
-// ========== 普通用户登录 ==========
-
-async function handleSmsLogin() {
-  if (!validateAgreement()) return
-  if (!smsForm.phone || !smsForm.code) {
-    uni.showToast({ title: '请填写完整信息', icon: 'none' })
-    return
-  }
-  if (smsForm.phone.length !== 11) {
+async function sendForgotCode() {
+  const phone = forgotForm.phone
+  if (!phone || phone.length !== 11) {
     uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
     return
   }
   try {
-    const result = await loginByMobile(smsForm.phone, smsForm.code)
-    onLoginSuccess(result.token, result.role, result.username, result.userId)
+    const code = await sendSms(phone)
+    forgotForm.code = code
+    uni.showToast({ title: `【演示环境】您的验证码是：${code}`, icon: 'none', duration: 4000 })
+    startCountdown()
   } catch { /* 错误已由拦截器处理 */ }
 }
 
-// ========== 管理员登录 ==========
-
-async function handleAdminLogin() {
+async function handleLogin() {
   if (!validateAgreement()) return
-  if (!adminForm.username || !adminForm.password) {
+  if (!loginForm.phone || !loginForm.password) {
     uni.showToast({ title: '请填写完整信息', icon: 'none' })
     return
   }
+  if (loginForm.phone.length !== 11) {
+    uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+    return
+  }
   try {
-    const result = await loginByAdmin(adminForm.username, adminForm.password)
-    onLoginSuccess(result.token, result.role, result.username, result.userId)
+    const result = await loginByUser(loginForm.phone, loginForm.password)
+    onLoginSuccess(result)
   } catch { /* 错误已由拦截器处理 */ }
 }
 
-// ========== 协议勾选与校验 ==========
+async function handleRegister() {
+  if (!validateAgreement()) return
+  if (!regForm.nickname || !regForm.phone || !regForm.code || !regForm.password) {
+    uni.showToast({ title: '请填写完整信息', icon: 'none' })
+    return
+  }
+  if (regForm.phone.length !== 11) {
+    uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+    return
+  }
+  if (regForm.password.length < 6) {
+    uni.showToast({ title: '密码长度不能少于6位', icon: 'none' })
+    return
+  }
+  if (regForm.password !== regForm.confirmPassword) {
+    uni.showToast({ title: '两次输入的密码不一致', icon: 'none' })
+    return
+  }
+  try {
+    const result = await register({
+      nickname: regForm.nickname,
+      phone: regForm.phone,
+      code: regForm.code,
+      password: regForm.password,
+    })
+    onLoginSuccess(result)
+  } catch { /* 错误已由拦截器处理 */ }
+}
+
+async function handleResetPassword() {
+  if (!forgotForm.phone || !forgotForm.code || !forgotForm.newPassword) {
+    uni.showToast({ title: '请填写完整信息', icon: 'none' })
+    return
+  }
+  if (forgotForm.phone.length !== 11) {
+    uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+    return
+  }
+  if (forgotForm.newPassword.length < 6) {
+    uni.showToast({ title: '新密码长度不能少于6位', icon: 'none' })
+    return
+  }
+  try {
+    await resetPassword(forgotForm.phone, forgotForm.code, forgotForm.newPassword)
+    uni.showToast({ title: '重置成功，请重新登录', icon: 'success' })
+    showForgot.value = false
+    forgotForm.phone = ''
+    forgotForm.code = ''
+    forgotForm.newPassword = ''
+  } catch { /* 错误已由拦截器处理 */ }
+}
+
+function openForgot() {
+  showForgot.value = true
+}
+
+function goCanteen() {
+  uni.reLaunch({ url: '/pages/login/canteen' })
+}
 
 function toggleNotice() {
   agreeNotice.value = !agreeNotice.value
@@ -231,27 +377,13 @@ function validateAgreement(): boolean {
   return ok
 }
 
-// ========== 登录成功统一处理 ==========
-
-function onLoginSuccess(token: string, role: string, username: string, userId: number) {
-  setToken(token)
-  setUserInfo({ userId, username, phone: '', role })
-
-  // 重连 WebSocket
-  reconnectWs(token)
-
+function onLoginSuccess(result: { token: string; role: string; username: string; userId: number }) {
+  setToken(result.token)
+  setUserInfo({ userId: result.userId, username: result.username, phone: '', role: result.role })
+  reconnectWs(result.token)
   uni.showToast({ title: '登录成功', icon: 'success' })
-
-  // 根据角色跳转不同首页
   setTimeout(() => {
-    if (role === 'ADMIN_CANTEEN') {
-      uni.reLaunch({ url: '/pages/canteen/workbench/index' })
-    } else if (role === 'ADMIN_SYSTEM') {
-      uni.showToast({ title: '系统管理员请使用PC端管理后台', icon: 'none', duration: 3000 })
-      setToken('')
-    } else {
-      uni.reLaunch({ url: '/pages/index/index' })
-    }
+    uni.reLaunch({ url: '/pages/index/index' })
   }, 500)
 }
 
@@ -274,32 +406,30 @@ function connectWs(token: string) {
   uni.connectSocket({ url: wsUrl })
 }
 
-// ========== 已登录自动跳转 ==========
-
 onMounted(() => {
   if (getToken()) {
-    const info = getUserInfoFromStorage()
-    if (info?.role === 'ADMIN_CANTEEN') {
-      uni.reLaunch({ url: '/pages/canteen/workbench/index' })
-    } else {
-      uni.reLaunch({ url: '/pages/index/index' })
-    }
+    uni.reLaunch({ url: '/pages/index/index' })
   }
 })
-
-function getUserInfoFromStorage() {
-  try {
-    const raw = uni.getStorageSync('canteen-user')
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
-}
 </script>
 
 <style scoped>
 .login-container {
+  position: relative;
   min-height: 100vh;
   background-color: #f5f5f5;
   padding: 60rpx 40rpx;
+}
+
+.corner-badge {
+  position: absolute;
+  top: 40rpx;
+  right: 30rpx;
+  font-size: 24rpx;
+  color: #FF6B35;
+  padding: 8rpx 20rpx;
+  border: 2rpx solid #FF6B35;
+  border-radius: 32rpx;
 }
 
 .login-header {
@@ -321,7 +451,7 @@ function getUserInfoFromStorage() {
   color: #333;
 }
 
-/* 角色切换 */
+/* 登录/注册切换 */
 .role-tabs {
   display: flex;
   background: #fff;
@@ -373,6 +503,18 @@ function getUserInfoFromStorage() {
   box-sizing: border-box;
 }
 
+.phone-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.phone-prefix {
+  font-size: 28rpx;
+  color: #666;
+  flex-shrink: 0;
+}
+
 .code-row {
   display: flex;
   align-items: center;
@@ -398,6 +540,17 @@ function getUserInfoFromStorage() {
 .code-btn[disabled] {
   background: #ccc;
   color: #999;
+}
+
+.forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16rpx;
+}
+
+.forgot-link {
+  font-size: 26rpx;
+  color: #FF6B35;
 }
 
 .submit-btn {
@@ -468,7 +621,7 @@ function getUserInfoFromStorage() {
   80% { transform: translateX(12rpx); }
 }
 
-/* 协议弹窗 */
+/* 弹窗 */
 .modal-mask {
   position: fixed;
   inset: 0;
@@ -503,6 +656,10 @@ function getUserInfoFromStorage() {
   overflow-y: auto;
 }
 
+.forgot-field {
+  margin-bottom: 24rpx;
+}
+
 .modal-close {
   width: 100%;
   height: 80rpx;
@@ -510,6 +667,18 @@ function getUserInfoFromStorage() {
   margin-top: 24rpx;
   background: #FF6B35;
   color: #fff;
+  font-size: 28rpx;
+  border: none;
+  border-radius: 12rpx;
+}
+
+.modal-cancel {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  margin-top: 16rpx;
+  background: #f5f5f5;
+  color: #666;
   font-size: 28rpx;
   border: none;
   border-radius: 12rpx;

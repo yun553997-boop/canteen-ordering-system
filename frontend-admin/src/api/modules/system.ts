@@ -11,8 +11,23 @@ export const getSystemUserList = (params: System.ReqUserParams & Record<string, 
 
 /**
  * @description 开通食堂管理员账号
- * @param params username + phone
+ * @param params username + phone + code
  */
-export const createCanteenStaff = (params: { username: string; phone: string }) => {
+export const createCanteenStaff = (params: { username: string; phone: string; code: string }) => {
   return http.post(`/v1/system/users/canteen-staff`, params);
+};
+
+/**
+ * @description 注销（禁用）食堂管理员账号
+ * @param params userId + code
+ */
+export const deactivateCanteenStaff = (params: { userId: number; code: string }) => {
+  return http.post(`/v1/system/users/deactivate`, params);
+};
+
+/**
+ * @description 发送短信验证码（mock，返回验证码）
+ */
+export const sendSmsCode = (phone: string) => {
+  return http.post<string>(`/v1/auth/send-sms`, { phone });
 };

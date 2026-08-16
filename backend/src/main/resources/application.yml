@@ -47,4 +47,4 @@ system:
   is-mock-sms: true
 
 canteen:
-  upload-path: D:/Wed-dev/xiangmulianxi/canteen-ordering-system/backend/uploads
+  upload-path: uploads

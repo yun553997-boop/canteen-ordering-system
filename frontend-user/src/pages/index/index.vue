@@ -177,7 +177,7 @@ async function submitOrder() {
   if (!token) {
     uni.showToast({ title: '请先登录', icon: 'none' })
     setTimeout(() => {
-      uni.reLaunch({ url: '/pages/login/login' })
+      uni.reLaunch({ url: '/pages/login/index' })
     }, 800)
     return
   }

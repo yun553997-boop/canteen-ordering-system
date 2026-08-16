@@ -8,7 +8,7 @@
       :data-callback="dataCallback"
     >
       <template #tableHeader>
-        <el-button type="primary" :icon="CirclePlus" @click="openDialog()">开通食堂账号</el-button>
+        <el-button type="primary" :icon="CirclePlus" @click="openDialog">开通食堂账号</el-button>
       </template>
       <template #status="scope">
         <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" size="small">
@@ -21,52 +21,88 @@
         </el-tag>
       </template>
       <template #operation="scope">
-        <el-button type="primary" link :icon="Edit" @click="openDialog(scope.row)">编辑</el-button>
-        <el-button type="danger" link :icon="Delete" disabled title="暂不支持">删除</el-button>
+        <el-button
+          v-if="scope.row.status === 1"
+          type="danger"
+          link
+          :icon="Delete"
+          @click="openDeactivate(scope.row)"
+        >
+          注销
+        </el-button>
       </template>
     </ProTable>
 
-    <!-- 开通 / 编辑食堂管理员账号弹窗 -->
+    <!-- 开通食堂管理员账号弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑食堂管理员' : '开通食堂管理员账号'"
+      title="开通食堂管理员账号"
       width="480px"
       :close-on-click-modal="false"
       destroy-on-close
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="用户名" prop="username">
-          <el-input
-            v-model="form.username"
-            placeholder="请输入用户名 / 工号"
-            maxlength="30"
-            :disabled="!!editingId"
-          />
+          <el-input v-model="form.username" placeholder="请输入用户名 / 工号" maxlength="30" />
         </el-form-item>
         <el-form-item label="手机号" prop="phone">
-          <el-input
-            v-model="form.phone"
-            placeholder="请输入手机号"
-            maxlength="11"
-          />
+          <el-input v-model="form.phone" placeholder="请输入手机号" maxlength="11" />
+        </el-form-item>
+        <el-form-item label="验证码" prop="code">
+          <div style="display: flex; gap: 8px; width: 100%">
+            <el-input v-model="form.code" placeholder="请输入验证码" maxlength="6" />
+            <el-button :disabled="smsCountdown > 0" @click="handleSendSms">
+              {{ smsCountdown > 0 ? smsCountdown + 's' : '发送验证码' }}
+            </el-button>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" :disabled="!hasChanged" @click="handleSubmit">确定</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 注销食堂管理员账号弹窗 -->
+    <el-dialog
+      v-model="deactivateVisible"
+      title="注销食堂管理员账号"
+      width="480px"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <el-form label-width="90px">
+        <el-form-item label="用户名">
+          <el-input :model-value="deactivateTarget?.username" disabled />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input :model-value="deactivateTarget?.phone" disabled />
+        </el-form-item>
+        <el-form-item label="验证码">
+          <div style="display: flex; gap: 8px; width: 100%">
+            <el-input v-model="deactivateCode" placeholder="请输入验证码" maxlength="6" />
+            <el-button :disabled="deactivateCountdown > 0" @click="handleDeactivateSendSms">
+              {{ deactivateCountdown > 0 ? deactivateCountdown + 's' : '发送验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="deactivateVisible = false">取消</el-button>
+        <el-button type="danger" :loading="deactivateSubmitting" @click="handleDeactivate">确认注销</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="systemUser">
-import { CirclePlus, Delete, Edit } from "@element-plus/icons-vue";
+import { CirclePlus, Delete } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import type { FormInstance, FormRules } from "element-plus";
-import { computed, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 
 import { System } from "@/api/interface";
-import { createCanteenStaff, getSystemUserList } from "@/api/modules/system";
+import { createCanteenStaff, deactivateCanteenStaff, getSystemUserList, sendSmsCode } from "@/api/modules/system";
 import ProTable from "@/components/ProTable/index.vue";
 import { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
@@ -101,23 +137,16 @@ const columns = reactive<ColumnProps<System.SysUserInfo>[]>([
   { prop: "status", label: "状态", width: 90 },
   { prop: "isInitialPassword", label: "密码状态", width: 110 },
   { prop: "createTime", label: "创建时间", width: 170 },
-  { prop: "operation", label: "操作", fixed: "right", width: 140 }
+  { prop: "operation", label: "操作", fixed: "right", width: 100 }
 ]);
 
-// 新增 / 编辑弹窗
+// ========== 开通 ==========
 const dialogVisible = ref(false);
 const submitting = ref(false);
-const editingId = ref<number | null>(null);
-const originalPhone = ref("");
 const formRef = ref<FormInstance>();
-const defaultForm = { username: "", phone: "" };
-const form = reactive({ ...defaultForm });
-
-// 编辑模式下内容是否有变化
-const hasChanged = computed(() => {
-  if (!editingId.value) return true; // 新增模式始终允许确认
-  return form.phone !== originalPhone.value;
-});
+const form = reactive({ username: "", phone: "", code: "" });
+const smsCountdown = ref(0);
+let smsTimer: ReturnType<typeof setInterval> | null = null;
 
 const rules: FormRules = {
   username: [
@@ -127,21 +156,40 @@ const rules: FormRules = {
   phone: [
     { required: true, message: "请输入手机号", trigger: "blur" },
     { pattern: /^1[3-9]\d{9}$/, message: "请输入正确的手机号", trigger: "blur" }
-  ]
+  ],
+  code: [{ required: true, message: "请输入验证码", trigger: "blur" }]
 };
 
-function openDialog(row?: System.SysUserInfo) {
-  if (row) {
-    editingId.value = row.id!;
-    form.username = row.username;
-    form.phone = row.phone;
-    originalPhone.value = row.phone;
-  } else {
-    editingId.value = null;
-    originalPhone.value = "";
-    Object.assign(form, defaultForm);
-  }
+function openDialog() {
+  Object.assign(form, { username: "", phone: "", code: "" });
+  smsCountdown.value = 0;
   dialogVisible.value = true;
+}
+
+function startSmsCountdown() {
+  smsCountdown.value = 60;
+  if (smsTimer) clearInterval(smsTimer);
+  smsTimer = setInterval(() => {
+    smsCountdown.value--;
+    if (smsCountdown.value <= 0 && smsTimer) {
+      clearInterval(smsTimer);
+      smsTimer = null;
+    }
+  }, 1000);
+}
+
+async function handleSendSms() {
+  if (!form.phone || !/^1[3-9]\d{9}$/.test(form.phone)) {
+    ElMessage.warning("请输入正确的手机号");
+    return;
+  }
+  try {
+    const res = await sendSmsCode(form.phone);
+    ElMessage.success(`验证码已发送（演示：${res.data}）`);
+    startSmsCountdown();
+  } catch {
+    // error handled by interceptor
+  }
 }
 
 async function handleSubmit() {
@@ -149,14 +197,71 @@ async function handleSubmit() {
   if (!valid) return;
   submitting.value = true;
   try {
-    await createCanteenStaff({ username: form.username, phone: form.phone });
-    ElMessage.success(editingId.value ? "编辑成功" : "开通成功");
+    await createCanteenStaff({ username: form.username, phone: form.phone, code: form.code });
+    ElMessage.success("开通成功");
     dialogVisible.value = false;
     proTable.value?.getTableList();
   } catch {
     // error handled by interceptor
   } finally {
     submitting.value = false;
+  }
+}
+
+// ========== 注销 ==========
+const deactivateVisible = ref(false);
+const deactivateSubmitting = ref(false);
+const deactivateTarget = ref<System.SysUserInfo | null>(null);
+const deactivateCode = ref("");
+const deactivateCountdown = ref(0);
+let deactivateTimer: ReturnType<typeof setInterval> | null = null;
+
+function openDeactivate(row: System.SysUserInfo) {
+  deactivateTarget.value = row;
+  deactivateCode.value = "";
+  deactivateCountdown.value = 0;
+  deactivateVisible.value = true;
+}
+
+function startDeactivateCountdown() {
+  deactivateCountdown.value = 60;
+  if (deactivateTimer) clearInterval(deactivateTimer);
+  deactivateTimer = setInterval(() => {
+    deactivateCountdown.value--;
+    if (deactivateCountdown.value <= 0 && deactivateTimer) {
+      clearInterval(deactivateTimer);
+      deactivateTimer = null;
+    }
+  }, 1000);
+}
+
+async function handleDeactivateSendSms() {
+  const phone = deactivateTarget.value?.phone;
+  if (!phone) return;
+  try {
+    const res = await sendSmsCode(phone);
+    ElMessage.success(`验证码已发送（演示：${res.data}）`);
+    startDeactivateCountdown();
+  } catch {
+    // error handled by interceptor
+  }
+}
+
+async function handleDeactivate() {
+  if (!deactivateCode.value) {
+    ElMessage.warning("请输入验证码");
+    return;
+  }
+  deactivateSubmitting.value = true;
+  try {
+    await deactivateCanteenStaff({ userId: deactivateTarget.value!.id!, code: deactivateCode.value });
+    ElMessage.success("注销成功");
+    deactivateVisible.value = false;
+    proTable.value?.getTableList();
+  } catch {
+    // error handled by interceptor
+  } finally {
+    deactivateSubmitting.value = false;
   }
 }
 </script>
