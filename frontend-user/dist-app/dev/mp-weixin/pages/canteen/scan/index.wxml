@@ -1,0 +1,1 @@
+<view class="scan-page data-v-c201b1e1"><view class="scan-box data-v-c201b1e1"><text class="scan-icon data-v-c201b1e1">📷</text><text class="scan-title data-v-c201b1e1">扫码核销</text><text class="scan-tip data-v-c201b1e1">扫描用户出示的取餐二维码，自动核销订单</text><button class="scan-btn data-v-c201b1e1" bindtap="{{a}}">开始扫码</button></view></view>

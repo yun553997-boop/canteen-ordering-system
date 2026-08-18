@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/mine/mine",
+    "pages/wallet/index",
+    "pages/notification/list",
+    "pages/login/index",
+    "pages/login/canteen",
+    "pages/order/list",
+    "pages/order/detail",
+    "pages/canteen/workbench/index",
+    "pages/canteen/dish/index",
+    "pages/canteen/scan/index"
+  ],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "食堂订餐",
+    "navigationBarBackgroundColor": "#FF6B35",
+    "backgroundColor": "#F5F5F5"
+  },
+  "usingComponents": {}
+}

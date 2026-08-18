@@ -1,0 +1,1 @@
+import{g as n,a as t}from"./_plugin-vue_export-helper.DdQVnW8g.js";function i(t=1,i=20){return n(`/user/notifications/list?page=${t}&pageSize=${i}`)}function r(){return n("/user/notifications/unread-count")}function e(n){return t(`/user/notifications/read/${n}`)}function a(){return t("/user/notifications/read-all")}export{i as a,a as b,r as g,e as m};

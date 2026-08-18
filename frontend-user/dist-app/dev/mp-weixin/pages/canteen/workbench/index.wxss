@@ -1,0 +1,108 @@
+.workbench.data-v-e1b2ab0a { min-height: 100vh; background: #f5f5f5; padding-bottom: 120rpx;
+}
+.stats-row.data-v-e1b2ab0a { display: flex; gap: 16rpx; padding: 20rpx;
+}
+.stat-card.data-v-e1b2ab0a {
+  flex: 1; background: #fff; border-radius: 12rpx; padding: 24rpx;
+  text-align: center; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+}
+.stat-num.data-v-e1b2ab0a { font-size: 40rpx; font-weight: bold; color: #FF6B35; display: block;
+}
+.stat-label.data-v-e1b2ab0a { font-size: 24rpx; color: #999; margin-top: 4rpx;
+}
+.stat-card.pending .stat-num.data-v-e1b2ab0a { color: #E6A23C;
+}
+.stat-card.done .stat-num.data-v-e1b2ab0a { color: #67C23A;
+}
+.func-row.data-v-e1b2ab0a {
+  display: flex; margin: 20rpx; padding: 24rpx 8rpx;
+  background: #fff; border-radius: 12rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+}
+.func-item.data-v-e1b2ab0a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx;
+}
+.func-icon.data-v-e1b2ab0a { font-size: 44rpx;
+}
+.func-label.data-v-e1b2ab0a { font-size: 24rpx; color: #666;
+}
+.order-tabs.data-v-e1b2ab0a { display: flex; padding: 0 20rpx; gap: 12rpx; margin-bottom: 16rpx;
+}
+.order-tab.data-v-e1b2ab0a {
+  padding: 12rpx 24rpx; font-size: 26rpx; color: #666;
+  background: #fff; border-radius: 8rpx;
+}
+.order-tab.active.data-v-e1b2ab0a { background: #FF6B35; color: #fff; font-weight: bold;
+}
+.order-list.data-v-e1b2ab0a { padding: 0 20rpx;
+}
+.order-card.data-v-e1b2ab0a {
+  background: #fff; border-radius: 12rpx; padding: 24rpx;
+  margin-bottom: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+}
+.order-header.data-v-e1b2ab0a { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx;
+}
+.order-no.data-v-e1b2ab0a { font-size: 26rpx; color: #999;
+}
+.order-header-right.data-v-e1b2ab0a { display: flex; align-items: center; gap: 12rpx;
+}
+.order-status.data-v-e1b2ab0a { font-size: 26rpx; font-weight: bold;
+}
+.expand-icon.data-v-e1b2ab0a { font-size: 36rpx; color: #999; padding: 0 4rpx;
+}
+.order-body.data-v-e1b2ab0a { display: flex; justify-content: space-between; margin-bottom: 16rpx;
+}
+.order-meal.data-v-e1b2ab0a { font-size: 28rpx; color: #333;
+}
+.order-amount.data-v-e1b2ab0a { font-size: 32rpx; font-weight: bold; color: #FF6B35;
+}
+.order-actions.data-v-e1b2ab0a { display: flex; align-items: center; gap: 16rpx;
+}
+.action-btn.data-v-e1b2ab0a { font-size: 24rpx; border: none; border-radius: 8rpx; padding: 8rpx 20rpx;
+}
+.action-btn.primary.data-v-e1b2ab0a { background: #409EFF; color: #fff;
+}
+.action-btn.success.data-v-e1b2ab0a { background: #67C23A; color: #fff;
+}
+.action-btn.warning.data-v-e1b2ab0a { background: #E6A23C; color: #fff;
+}
+.verify-hint.data-v-e1b2ab0a { font-size: 24rpx; color: #999;
+}
+
+/* 订单菜品明细展开 */
+.order-items.data-v-e1b2ab0a { border-top: 1rpx solid #f5f5f5; margin-top: 16rpx; padding-top: 16rpx;
+}
+.order-items-title.data-v-e1b2ab0a { font-size: 24rpx; color: #999; display: block; margin-bottom: 8rpx;
+}
+.order-item-row.data-v-e1b2ab0a { display: flex; align-items: center; padding: 8rpx 0;
+}
+.order-item-name.data-v-e1b2ab0a { flex: 1; font-size: 26rpx; color: #333;
+}
+.order-item-count.data-v-e1b2ab0a { font-size: 24rpx; color: #999; margin-right: 16rpx;
+}
+.order-item-price.data-v-e1b2ab0a { font-size: 26rpx; color: #FF6B35;
+}
+.order-items-loading.data-v-e1b2ab0a { font-size: 24rpx; color: #ccc; text-align: center; padding: 12rpx 0;
+}
+.empty-tip.data-v-e1b2ab0a { text-align: center; color: #999; padding: 100rpx 0;
+}
+
+/* 手动核销弹窗 */
+.modal-mask.data-v-e1b2ab0a {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal-box.data-v-e1b2ab0a { background: #fff; border-radius: 16rpx; padding: 40rpx; width: 560rpx;
+}
+.modal-title.data-v-e1b2ab0a { font-size: 32rpx; font-weight: bold; display: block; margin-bottom: 20rpx;
+}
+.modal-input.data-v-e1b2ab0a {
+  width: 100%; height: 80rpx; background: #f5f5f5; border-radius: 12rpx;
+  padding: 0 20rpx; font-size: 28rpx; box-sizing: border-box; margin-bottom: 24rpx;
+}
+.modal-btns.data-v-e1b2ab0a { display: flex; gap: 20rpx; justify-content: flex-end;
+}
+.modal-btn.data-v-e1b2ab0a { font-size: 26rpx; border: none; border-radius: 8rpx; padding: 12rpx 28rpx;
+}
+.modal-btn.cancel.data-v-e1b2ab0a { background: #f5f5f5; color: #666;
+}
+.modal-btn.confirm.data-v-e1b2ab0a { background: #FF6B35; color: #fff;
+}

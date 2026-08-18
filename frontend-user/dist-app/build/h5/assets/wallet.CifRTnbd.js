@@ -1,0 +1,1 @@
+import{g as e,p as r}from"./_plugin-vue_export-helper.DdQVnW8g.js";function a(){return e("/user/wallet/balance")}function n(e){return r("/user/wallet/recharge",{amount:e},{showLoading:!1})}function t(e,a){return r("/user/wallet/withdraw",{amount:e,channel:a},{showLoading:!1})}export{a as g,n as r,t as w};

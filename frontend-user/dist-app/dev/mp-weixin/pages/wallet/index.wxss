@@ -1,0 +1,198 @@
+.wallet-container.data-v-9914b066 {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 40rpx;
+}
+
+/* 余额卡片 */
+.balance-card.data-v-9914b066 {
+  margin: 20rpx;
+  padding: 48rpx 40rpx;
+  background: linear-gradient(135deg, #FF6B35, #FF8F60);
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+.balance-label.data-v-9914b066 {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+.balance-value.data-v-9914b066 {
+  font-size: 64rpx;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* 充值区 */
+.section-card.data-v-9914b066 {
+  margin: 0 20rpx 20rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  padding: 32rpx;
+}
+.section-title.data-v-9914b066 {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 24rpx;
+}
+.amount-grid.data-v-9914b066 {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 32rpx;
+}
+.amount-item.data-v-9914b066 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 0;
+  background: #f5f5f5;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+}
+.amount-item.active.data-v-9914b066 {
+  background: #fff5f0;
+  border-color: #FF6B35;
+}
+.amount-num.data-v-9914b066 {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+}
+.amount-item.active .amount-num.data-v-9914b066 {
+  color: #FF6B35;
+}
+.amount-unit.data-v-9914b066 {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+.recharge-btn.data-v-9914b066 {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: #FF6B35;
+  color: #fff;
+  font-size: 30rpx;
+  border-radius: 12rpx;
+}
+.refund-btn.data-v-9914b066 {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: #fff;
+  color: #FF3B30;
+  font-size: 30rpx;
+  border: 2rpx solid #FF3B30;
+  border-radius: 12rpx;
+}
+
+/* 支付方式底部弹层 */
+.pay-mask.data-v-9914b066 {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+.pay-sheet.data-v-9914b066 {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 40rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+}
+.pay-title.data-v-9914b066 {
+  font-size: 32rpx;
+  font-weight: bold;
+  display: block;
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+.pay-option.data-v-9914b066 {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 28rpx 16rpx;
+  border-bottom: 2rpx solid #f5f5f5;
+}
+.pay-icon.data-v-9914b066 {
+  font-size: 44rpx;
+}
+.pay-name.data-v-9914b066 {
+  font-size: 30rpx;
+  color: #333;
+}
+.pay-cancel.data-v-9914b066 {
+  width: 100%;
+  height: 84rpx;
+  line-height: 84rpx;
+  margin-top: 24rpx;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 28rpx;
+  border-radius: 12rpx;
+}
+
+/* 申请退款弹层 */
+.refund-row.data-v-9914b066 {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+.refund-label.data-v-9914b066 {
+  font-size: 28rpx;
+  color: #333;
+}
+.refund-input.data-v-9914b066 {
+  flex: 1;
+  height: 80rpx;
+  background: #f5f5f5;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+.refund-unit.data-v-9914b066 {
+  font-size: 28rpx;
+  color: #666;
+}
+.refund-channel-label.data-v-9914b066 {
+  font-size: 26rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 16rpx;
+}
+.channel-row.data-v-9914b066 {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.channel-option.data-v-9914b066 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 20rpx 0;
+  background: #f5f5f5;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+}
+.channel-option.active.data-v-9914b066 {
+  background: #fff5f0;
+  border-color: #FF6B35;
+}
+.channel-icon.data-v-9914b066 {
+  font-size: 44rpx;
+}
+.channel-name.data-v-9914b066 {
+  font-size: 26rpx;
+  color: #333;
+}

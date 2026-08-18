@@ -1,0 +1,99 @@
+
+.notif-container[data-v-f50c1698] {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+.notif-toolbar[data-v-f50c1698] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0.9375rem;
+  background: #fff;
+  border-bottom: 0.03125rem solid #eee;
+}
+.toolbar-title[data-v-f50c1698] {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #333;
+}
+.toolbar-action[data-v-f50c1698] {
+  font-size: 0.8125rem;
+  color: #FF6B35;
+}
+.notif-list[data-v-f50c1698] {
+  padding-top: 0;
+}
+.notif-item[data-v-f50c1698] {
+  display: flex;
+  align-items: flex-start;
+  background: #fff;
+  padding: 0.75rem 0.9375rem;
+  gap: 0.5rem;
+}
+.notif-item.unread[data-v-f50c1698] {
+  background: #FFF9F5;
+}
+.notif-left[data-v-f50c1698] {
+  padding-top: 0.1875rem;
+}
+.unread-dot[data-v-f50c1698] {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: #FF3B30;
+}
+.read-dot[data-v-f50c1698] {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: transparent;
+}
+.notif-body[data-v-f50c1698] {
+  flex: 1;
+}
+.notif-top[data-v-f50c1698] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+.notif-title[data-v-f50c1698] {
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: #333;
+}
+.notif-time[data-v-f50c1698] {
+  font-size: 0.6875rem;
+  color: #ccc;
+}
+.notif-content[data-v-f50c1698] {
+  font-size: 0.8125rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* 空态 */
+.empty-tip[data-v-f50c1698] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6.25rem 0;
+}
+.empty-icon[data-v-f50c1698] {
+  font-size: 2.5rem;
+  margin-bottom: 0.625rem;
+}
+.empty-text[data-v-f50c1698] {
+  font-size: 0.875rem;
+  color: #999;
+}
+
+/* 加载更多 */
+.load-more[data-v-f50c1698] {
+  text-align: center;
+  padding: 0.75rem;
+}
+.load-text[data-v-f50c1698] {
+  font-size: 0.8125rem;
+  color: #999;
+}

@@ -1,0 +1,1 @@
+import{g as r,p as e}from"./_plugin-vue_export-helper.DdQVnW8g.js";function s(e){return r("/user/dishes/list",e?{category:e}:void 0)}function t(r){return e("/user/orders/create",r)}function n(e){return r(`/user/orders/detail/${e}`)}function u(){return r("/user/orders/list")}function o(r){return e(`/user/orders/cancel/${r}`)}export{u as a,n as b,o as c,s as g,t as s};

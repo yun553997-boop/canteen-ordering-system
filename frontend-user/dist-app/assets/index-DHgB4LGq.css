@@ -1,0 +1,188 @@
+
+.menu-container[data-v-83a5a03c] {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+/* 餐次切换 */
+.meal-tabs[data-v-83a5a03c] {
+  display: flex;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.625rem;
+  background: #fff;
+}
+.meal-tab[data-v-83a5a03c] {
+  padding: 0.5rem 1.375rem;
+  font-size: 0.875rem;
+  color: #666;
+  border-radius: 1rem;
+  background: #f5f5f5;
+  transition: all 0.3s;
+}
+.meal-tab.active[data-v-83a5a03c] {
+  background: #FF6B35;
+  color: #fff;
+  font-weight: bold;
+}
+
+/* 菜品列表 */
+.dish-list[data-v-83a5a03c] {
+  flex: 1;
+  padding: 0.625rem;
+}
+.dish-card[data-v-83a5a03c] {
+  display: flex;
+  background: #fff;
+  border-radius: 0.5rem;
+  margin-bottom: 0.625rem;
+  overflow: hidden;
+  padding: 0.625rem;
+}
+.dish-img[data-v-83a5a03c] {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 0.375rem;
+  background: #eee;
+  flex-shrink: 0;
+}
+.dish-info[data-v-83a5a03c] {
+  flex: 1;
+  margin-left: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.dish-name[data-v-83a5a03c] {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #333;
+}
+.dish-desc[data-v-83a5a03c] {
+  font-size: 0.75rem;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dish-meta[data-v-83a5a03c] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dish-price[data-v-83a5a03c] {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #FF6B35;
+}
+.price-symbol[data-v-83a5a03c] {
+  font-size: 0.75rem;
+}
+.dish-stock[data-v-83a5a03c] {
+  font-size: 0.6875rem;
+  color: #999;
+}
+.dish-bottom[data-v-83a5a03c] {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.sold-out[data-v-83a5a03c] {
+  font-size: 0.75rem;
+  color: #ccc;
+  padding: 0.25rem 0.5rem;
+  background: #f5f5f5;
+  border-radius: 0.25rem;
+}
+.cart-control[data-v-83a5a03c] {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.ctrl-btn[data-v-83a5a03c] {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: bold;
+  line-height: 1.5rem;
+  padding: 0;
+  border: none;
+}
+.ctrl-btn.add[data-v-83a5a03c] {
+  background: #FF6B35;
+  color: #fff;
+}
+.ctrl-btn.add[disabled][data-v-83a5a03c] {
+  background: #ccc;
+}
+.ctrl-btn.minus[data-v-83a5a03c] {
+  background: #eee;
+  color: #333;
+}
+.cart-num[data-v-83a5a03c] {
+  font-size: 0.875rem;
+  font-weight: bold;
+  min-width: 1.25rem;
+  text-align: center;
+}
+.empty-tip[data-v-83a5a03c] {
+  text-align: center;
+  color: #999;
+  font-size: 0.875rem;
+  padding: 3.125rem 0;
+}
+
+/* 底部购物车栏 */
+.cart-bar[data-v-83a5a03c] {
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 0.5rem 0.9375rem;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -0.0625rem 0.3125rem rgba(0, 0, 0, 0.05);
+}
+.cart-info[data-v-83a5a03c] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cart-icon-wrap[data-v-83a5a03c] {
+  position: relative;
+}
+.cart-icon[data-v-83a5a03c] {
+  font-size: 1.375rem;
+}
+.cart-badge[data-v-83a5a03c] {
+  position: absolute;
+  top: -0.3125rem;
+  right: -0.3125rem;
+  background: #FF6B35;
+  color: #fff;
+  font-size: 0.625rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 1rem;
+}
+.cart-total[data-v-83a5a03c] {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #FF6B35;
+}
+.checkout-btn[data-v-83a5a03c] {
+  background: #FF6B35;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 1.125rem;
+  padding: 0.5rem 1.25rem;
+}

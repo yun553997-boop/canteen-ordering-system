@@ -19,8 +19,10 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
   const env = loadEnv(mode, root);
   const viteEnv = wrapperEnv(env);
 
+
   return {
-    base: viteEnv.VITE_PUBLIC_PATH,
+    // base: viteEnv.VITE_PUBLIC_PATH,
+    base: '/admin/',
     root,
     resolve: {
       alias: {

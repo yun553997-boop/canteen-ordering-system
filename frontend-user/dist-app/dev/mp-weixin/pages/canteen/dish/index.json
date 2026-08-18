@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "菜品管理",
+  "usingComponents": {
+    "custom-tab-bar": "../../../components/CustomTabBar"
+  }
+}

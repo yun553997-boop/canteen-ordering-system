@@ -1,0 +1,218 @@
+
+.order-container[data-v-5511cfa9] {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 1.25rem;
+}
+
+/* 状态卡片 */
+.status-card[data-v-5511cfa9] {
+  background: linear-gradient(135deg, #FF6B35, #FF8C42);
+  padding: 1.25rem;
+  text-align: center;
+  color: #fff;
+}
+.status-icon[data-v-5511cfa9] {
+  margin-bottom: 0.5rem;
+}
+.icon-text[data-v-5511cfa9] {
+  font-size: 2rem;
+}
+.status-title[data-v-5511cfa9] {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+.status-desc[data-v-5511cfa9] {
+  font-size: 0.8125rem;
+  opacity: 0.85;
+}
+
+/* 进度条 */
+.progress-bar[data-v-5511cfa9] {
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+  padding: 0.9375rem 1.25rem;
+  margin: 0.625rem;
+  border-radius: 0.5rem;
+}
+.step-item[data-v-5511cfa9] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+.step-dot[data-v-5511cfa9] {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+.step-item.done .step-dot[data-v-5511cfa9],
+.step-item.current .step-dot[data-v-5511cfa9] {
+  background: #FF6B35;
+  color: #fff;
+}
+.dot-check[data-v-5511cfa9] {
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+.dot-num[data-v-5511cfa9] {
+  font-size: 0.75rem;
+  color: #999;
+}
+.step-item.done .dot-num[data-v-5511cfa9],
+.step-item.current .dot-num[data-v-5511cfa9] {
+  color: #fff;
+}
+.step-label[data-v-5511cfa9] {
+  font-size: 0.6875rem;
+  color: #999;
+}
+.step-item.done .step-label[data-v-5511cfa9],
+.step-item.current .step-label[data-v-5511cfa9] {
+  color: #FF6B35;
+  font-weight: bold;
+}
+.step-line[data-v-5511cfa9] {
+  position: absolute;
+  top: 0.75rem;
+  left: calc(50% + 1rem);
+  right: calc(-50% + 1rem);
+  height: 0.125rem;
+  background: #eee;
+}
+.step-line.filled[data-v-5511cfa9] {
+  background: #FF6B35;
+}
+
+/* 取餐码卡片 */
+.pickup-card[data-v-5511cfa9] {
+  background: linear-gradient(135deg, #FFF8E1, #FFF3CD);
+  margin: 0.625rem;
+  padding: 0.9375rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  border: 0.0625rem dashed #FF6B35;
+}
+.pickup-label[data-v-5511cfa9] {
+  display: block;
+  font-size: 0.8125rem;
+  color: #666;
+  margin-bottom: 0.375rem;
+}
+.pickup-code[data-v-5511cfa9] {
+  display: block;
+  font-size: 2.25rem;
+  font-weight: bold;
+  color: #FF6B35;
+  letter-spacing: 0.375rem;
+  margin-bottom: 0.25rem;
+}
+.pickup-tip[data-v-5511cfa9] {
+  font-size: 0.6875rem;
+  color: #999;
+}
+
+/* 通用区块 */
+.section[data-v-5511cfa9] {
+  background: #fff;
+  margin: 0.625rem;
+  padding: 0.9375rem;
+  border-radius: 0.5rem;
+}
+.section-title[data-v-5511cfa9] {
+  font-size: 0.9375rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.625rem;
+  display: block;
+}
+
+/* 菜品清单 */
+.order-item[data-v-5511cfa9] {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 0.03125rem solid #f5f5f5;
+}
+.order-item[data-v-5511cfa9]:last-child {
+  border-bottom: none;
+}
+.item-img-placeholder[data-v-5511cfa9] {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.25rem;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+.item-info[data-v-5511cfa9] {
+  flex: 1;
+  margin-left: 0.5rem;
+}
+.item-name[data-v-5511cfa9] {
+  font-size: 0.875rem;
+  color: #333;
+}
+.item-right[data-v-5511cfa9] {
+  text-align: right;
+}
+.item-count[data-v-5511cfa9] {
+  font-size: 0.75rem;
+  color: #999;
+  margin-right: 0.375rem;
+}
+.item-price[data-v-5511cfa9] {
+  font-size: 0.875rem;
+  color: #333;
+}
+
+/* 金额明细 */
+.price-row[data-v-5511cfa9] {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.375rem 0;
+}
+.price-label[data-v-5511cfa9] {
+  font-size: 0.8125rem;
+  color: #666;
+}
+.price-value[data-v-5511cfa9] {
+  font-size: 0.8125rem;
+  color: #333;
+}
+.price-row.total[data-v-5511cfa9] {
+  padding-top: 0.625rem;
+  margin-top: 0.25rem;
+}
+.total-price[data-v-5511cfa9] {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #FF6B35;
+}
+
+/* 订单信息 */
+.info-row[data-v-5511cfa9] {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.375rem 0;
+}
+.info-label[data-v-5511cfa9] {
+  font-size: 0.8125rem;
+  color: #999;
+}
+.info-value[data-v-5511cfa9] {
+  font-size: 0.8125rem;
+  color: #333;
+}
